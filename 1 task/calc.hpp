@@ -1,5 +1,13 @@
-// Автор: Томских Т.К. (Ondosh)
+// // Автор: Томских Т.К. (Ondosh)
+// ar rcs libmylib.a math.o utils.o
 
+// # Или из всех .o файлов в папке
+// ar rcs libmylib.a *.o
+// ```
+
+// **4. Компиляция основной программы с библиотекой**
+// ```bash
+// g++ main.cpp libmylib.a -o program.exe
 #ifndef MODULE // Защита от повторного включения
 #define MODULE
 #include <cmath> // Исправлено: рекомендуется использовать <cmath> вместо <math.h> в C++
