@@ -87,7 +87,7 @@ int main() {
     if (mode == 1){
         string save_filename;
         cout << "Сохранить этот массив в файл? (введите имя файла или '-' чтобы пропустить): " << flush;
-        cin >> save_filename;  /* code */
+        cin >> save_filename;
     
         if (save_filename != "-") {
             if (save_array_to_file(nums, count, save_filename)) {
