@@ -93,7 +93,7 @@ int* input_array_from_keyboard(size_t count) {
         throw std::invalid_argument("Для ручного ввода максимальное количество — " +
                                     std::to_string(MAX_SIZE_KEYBOARD) + " чисел.");
     }
-
+    
     int* arr = new int[count]; // может выбросить std::bad_alloc
 
     std::cout << "Введите " << count << " целых чисел:\n";

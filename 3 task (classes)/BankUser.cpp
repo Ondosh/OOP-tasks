@@ -39,6 +39,7 @@ void BankUser::transfer(double sum, BankUser& recipient_account) {
     if (&recipient_account == this) {
         throw std::invalid_argument("Cannot transfer to the same account");
     }
+    //
     
     current_balance -= sum;
     recipient_account.current_balance += sum;
