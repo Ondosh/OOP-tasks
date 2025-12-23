@@ -147,8 +147,8 @@ int main() {
             cout << "  " << dynamic_array[i].generate_report() << "\n";
         }
         cout << "\n";
-
         // 5. Массив из указателей на объекты
+        //    Каждый элемент — отдельно созданный объект в куче
         cout << "5. Массив из указателей на объекты:\n";
         BankUser* ptr_array[N];
         ptr_array[0] = new BankUser("Григорьев Олег", "CLIENT008", 6000.0);
@@ -166,6 +166,7 @@ int main() {
         ofstream clear_file(filename, ios::trunc);
         clear_file.close();
 
+        // Экспорт всех клиентов (режим append = true)
         static_client1.export_to_file(filename, true);
         static_client2.export_to_file(filename, true);
         dynamic_client->export_to_file(filename, true);
@@ -192,6 +193,8 @@ int main() {
         cout << "7. Импорт из файла:\n";
         BankUser imported("", "", 0.0);
         ifstream import_stream(filename);
+        // Импорт только первого клиента из файла
+        // (метод import_from_stream читает ровно одну строку)
         if (import_stream.is_open()) {
             try {
                 imported.import_from_stream(import_stream);
@@ -205,17 +208,20 @@ int main() {
 
         // 8. Освобождение памяти
         cout << "8. Освобождение памяти:\n";
-        delete dynamic_client;
-        delete[] dynamic_array;
+        // Освобождение памяти в порядке, обратном выделению:
+        // сначала отдельные объекты, затем массивы
+        delete dynamic_client;          // одиночный объект
+        delete[] dynamic_array;         // динамический массив
         for (int i = 0; i < N; ++i) {
-            delete ptr_array[i];
+            delete ptr_array[i];        // каждый указатель в массиве
         }
         cout << "  Память освобождена.\n\n";
 
     } catch (const exception& e) {
         cerr << "Критическая ошибка: " << e.what() << "\n";
         return 1;
-    }
+    } // В данной реализации catch лишь демонстрация примерного использования кода 
+      // - здесь он не работает в силу верности данных
 
     cout << "Программа успешно завершена.\n";
     return 0;
