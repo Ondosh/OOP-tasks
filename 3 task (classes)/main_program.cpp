@@ -2,6 +2,7 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
+#include <cassert> // <-- ДОБАВЛЕНО
 using namespace std;
 
 /**
@@ -12,6 +13,7 @@ using namespace std;
  * 2. Операции со счетами
  * 3. Работу с файлами
  * 4. Обработку исключений
+ * 5. Автоматизированные проверки через assert
  */
 int main() {
     cout << "Банковская система: демонстрация класса BankUser\n\n";
@@ -26,6 +28,13 @@ int main() {
             BankUser("Сидоров Михаил Петрович", "CLIENT003", 10000.0)
         };
         
+        // Тесты на инициализацию
+        assert(clients[0].get_current_balance() == 5000.0);
+        assert(clients[1].get_current_balance() == 3000.0);
+        assert(clients[2].get_current_balance() == 10000.0);
+        assert(clients[0].get_full_name() == "Иванов Иван Иванович");
+        assert(clients[1].get_client_ID() == "CLIENT002");
+        
         cout << "Создано " << clients.size() << " клиента(ов):\n";
         for (const auto& client : clients) {
             cout << "  - " << client.generate_report() << "\n";
@@ -37,10 +46,12 @@ int main() {
         
         cout << "Клиент " << clients[0].get_full_name() << " вносит 1500 руб.\n";
         clients[0].deposit(1500.0);
+        assert(clients[0].get_current_balance() == 6500.0); // 5000 + 1500
         cout << "  Новый баланс: " << clients[0].get_current_balance() << " руб.\n";
         
         cout << "\nКлиент " << clients[1].get_full_name() << " снимает 800 руб.\n";
         clients[1].withdraw(800.0);
+        assert(clients[1].get_current_balance() == 2200.0); // 3000 - 800
         cout << "  Новый баланс: " << clients[1].get_current_balance() << " руб.\n\n";
         
         // 3. Переводы между счетами
@@ -49,6 +60,10 @@ int main() {
         cout << "Перевод от " << clients[0].get_full_name() 
              << " к " << clients[1].get_full_name() << " на сумму 2000 руб.\n";
         clients[0].transfer(2000.0, clients[1]);
+        
+        // Проверка после перевода
+        assert(clients[0].get_current_balance() == 4500.0); // 6500 - 2000
+        assert(clients[1].get_current_balance() == 4200.0); // 2200 + 2000
         
         cout << "\nРезультаты перевода:\n";
         cout << "  " << clients[0].generate_report() << "\n";
@@ -59,6 +74,7 @@ int main() {
         
         cout << "Клиент " << clients[2].get_full_name() << " сменил фамилию.\n";
         clients[2].update_name("Кузнецов Михаил Петрович");
+        assert(clients[2].get_full_name() == "Кузнецов Михаил Петрович");
         cout << "  Новое имя: " << clients[2].get_full_name() << "\n";
         cout << "  Полный отчёт: " << clients[2].generate_report() << "\n\n";
         
@@ -111,6 +127,9 @@ int main() {
             cout << "Импортируем первого клиента из файла:\n";
             try {
                 imported_client.import_from_stream(import_stream);
+                assert(imported_client.get_full_name() == "Смирнова_Ольга_Игоревна");
+                assert(imported_client.get_client_ID() == "CLIENT004");
+                assert(abs(imported_client.get_current_balance() - 7500.5) < 1e-5);
                 cout << "  Импортировано: " << imported_client.generate_report() << "\n";
                 
                 // Импортируем второго клиента
@@ -120,6 +139,9 @@ int main() {
                 getline(import_stream2, temp); // пропускаем первую строку
                 imported_client2.import_from_stream(import_stream2);
                 import_stream2.close();
+                
+                assert(imported_client2.get_full_name() == "Васильев_Дмитрий_Александрович");
+                assert(abs(imported_client2.get_current_balance() - 12000.75) < 1e-5);
                 
                 cout << "Импортируем второго клиента из файла:\n";
                 cout << "  Импортировано: " << imported_client2.generate_report() << "\n";
@@ -137,6 +159,7 @@ int main() {
         try {
             cout << "Попытка создать клиента с отрицательным депозитом:\n";
             BankUser bad_client("Ошибочный Клиент", "ERROR001", -100.0);
+            assert(false); // Не должно дойти до этой строки
         } catch (const invalid_argument& e) {
             cout << "  Поймано исключение: " << e.what() << "\n";
         }
@@ -144,6 +167,7 @@ int main() {
         try {
             cout << "\nПопытка снять больше средств, чем есть на счете:\n";
             clients[1].withdraw(100000.0);
+            assert(false); // Не должно выполниться
         } catch (const runtime_error& e) {
             cout << "  Поймано исключение: " << e.what() << "\n";
         }
@@ -151,6 +175,7 @@ int main() {
         try {
             cout << "\nПопытка перевести средства самому себе:\n";
             clients[0].transfer(100.0, clients[0]);
+            assert(false); // Самоперевод запрещён
         } catch (const invalid_argument& e) {
             cout << "  Поймано исключение: " << e.what() << "\n";
         }
@@ -170,6 +195,10 @@ int main() {
             cout << "  " << client->generate_report() << "\n";
             total_balance += client->get_current_balance();
         }
+        
+        // Проверка итоговой суммы
+        double expected_total = 4500.0 + 4200.0 + 10000.0 + 7500.5;
+        assert(abs(total_balance - expected_total) < 1e-5);
         
         cout << "\nОбщая сумма всех счетов: " << total_balance << " руб.\n";
         cout << "Количество клиентов: " << all_clients.size() << "\n\n";
