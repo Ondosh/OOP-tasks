@@ -2,7 +2,7 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
-#include <cassert> // <-- ДОБАВЛЕНО
+#include <cassert>
 using namespace std;
 
 /**
