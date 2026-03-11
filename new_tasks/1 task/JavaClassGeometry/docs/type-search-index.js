@@ -1,0 +1,1 @@
+typeSearchIndex = [{"l":"All Classes and Interfaces","u":"allclasses-index.html"},{"p":"com.github.ondosh","l":"Main"},{"p":"com.github.ondosh","l":"Triangle"}];updateSearchResults();

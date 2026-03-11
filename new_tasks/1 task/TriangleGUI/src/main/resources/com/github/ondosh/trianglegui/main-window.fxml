@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.Separator?>
+<?import javafx.scene.control.TextField?>
+<?import javafx.scene.layout.ColumnConstraints?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.RowConstraints?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Font?>
+
+<VBox alignment="CENTER" spacing="10" xmlns="http://javafx.com/javafx/21" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.github.ondosh.trianglegui.MainController">
+    <padding>
+        <Insets bottom="20" left="20" right="20" top="20" />
+    </padding>
+
+    <Label text="Калькулятор треугольника">
+        <font>
+            <Font size="18.0" />
+        </font>
+    </Label>
+
+    <!-- Label для отображения ошибок - всегда занимает место, но невидим -->
+    <Label fx:id="errorLabel" style="-fx-text-fill: red; -fx-font-weight: bold;" visible="false" managed="true" wrapText="true" alignment="CENTER" maxWidth="350" minHeight="30" prefHeight="30" />
+
+    <GridPane hgap="10" vgap="10">
+        <columnConstraints>
+            <ColumnConstraints halignment="RIGHT" minWidth="70.0" />
+            <ColumnConstraints minWidth="100.0" />
+        </columnConstraints>
+        <rowConstraints>
+            <RowConstraints minHeight="30.0" />
+            <RowConstraints minHeight="30.0" />
+            <RowConstraints minHeight="30.0" />
+        </rowConstraints>
+
+        <Label text="Сторона a:" GridPane.rowIndex="0" GridPane.columnIndex="0" />
+        <TextField fx:id="side1Field" GridPane.rowIndex="0" GridPane.columnIndex="1" />
+
+        <Label text="Сторона b:" GridPane.rowIndex="1" GridPane.columnIndex="0" />
+        <TextField fx:id="side2Field" GridPane.rowIndex="1" GridPane.columnIndex="1" />
+
+        <Label text="Сторона c:" GridPane.rowIndex="2" GridPane.columnIndex="0" />
+        <TextField fx:id="side3Field" GridPane.rowIndex="2" GridPane.columnIndex="1" />
+    </GridPane>
+
+    <Button maxWidth="200.0" onAction="#calculateTriangle" text="Вычислить" />
+
+    <Separator prefWidth="200.0" />
+
+    <GridPane hgap="10" vgap="10">
+        <columnConstraints>
+            <ColumnConstraints halignment="RIGHT" minWidth="70.0" />
+            <ColumnConstraints minWidth="100.0" />
+        </columnConstraints>
+        <rowConstraints>
+            <RowConstraints minHeight="30.0" />
+            <RowConstraints minHeight="30.0" />
+        </rowConstraints>
+
+        <Label text="Периметр:" GridPane.rowIndex="0" GridPane.columnIndex="0" />
+        <Label fx:id="perimeterLabel" style="-fx-font-weight: bold;" text="-" GridPane.rowIndex="0" GridPane.columnIndex="1" />
+
+        <Label text="Площадь:" GridPane.rowIndex="1" GridPane.columnIndex="0" />
+        <Label fx:id="areaLabel" style="-fx-font-weight: bold;" text="-" GridPane.rowIndex="1" GridPane.columnIndex="1" />
+    </GridPane>
+
+    <Button maxWidth="200.0" onAction="#clearFields" text="Очистить" />
+</VBox>
