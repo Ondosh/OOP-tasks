@@ -31,17 +31,13 @@ public class MainController {
             double b = Double.parseDouble(side2Field.getText());
             double c = Double.parseDouble(side3Field.getText());
 
-            System.out.println("Введены значения: " + a + ", " + b + ", " + c); // отладка
-
             triangle.SetAll(a, b, c);
             updateDisplay();
             clearError();
 
         } catch (NumberFormatException e) {
-            System.out.println("Поймали NumberFormatException"); // отладка
             showError("Ошибка: введите числа");
         } catch (IllegalArgumentException e) {
-            System.out.println("Поймали IllegalArgumentException: " + e.getMessage()); // отладка
             showError("Ошибка: " + e.getMessage());
         }
     }
