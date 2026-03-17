@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox xmlns:fx="http://javafx.com/fxml"
+      fx:controller="com.github.ondosh.chatbot.controller.ChatController"
+      spacing="10"
+      style="-fx-padding: 15;">
+
+    <ListView fx:id="messageList" VBox.vgrow="ALWAYS"/>
+
+    <HBox spacing="10">
+        <TextField fx:id="inputField"
+                   promptText="Введите сообщение..."
+                   HBox.hgrow="ALWAYS"
+                   onAction="#onSendMessage"/>
+        <Button text="Отправить" onAction="#onSendMessage"/>
+    </HBox>
+
+</VBox>
