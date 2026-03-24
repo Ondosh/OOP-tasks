@@ -7,56 +7,104 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.security.SecureRandom;
 import java.security.cert.X509Certificate;
-import java.util.Base64;
 import java.util.UUID;
 
+/**
+ * Реализация бота на основе GigaChat API от Сбера.
+ * Получает токен доступа через OAuth 2.0 и отправляет запросы к LLM.
+ * Токен автоматически обновляется по истечении срока жизни.
+ */
 public class GigaChatBot implements IBot {
 
+    /**
+     * Ключ авторизации в формате Base64 (Client ID + Client Secret).
+     * Используется в заголовке Authorization: Basic <ключ> при получении токена.
+     */
     private static final String AUTHORIZATION_KEY = "MDE5Y2Y1M2MtNTE4ZS03ZWM5LTk1YWYtMDc0OGE2YTA5ZWNhOjUwYWVhMjg0LTYwNWYtNDRjYi1iNzY3LWYyMzRmYjI1MTQ4Zg==";
+
+    /**
+     * Идентификатор приложения (Client ID), выданный при регистрации в GigaChat API.
+     */
     private static final String CLIENT_ID = "019cf53c-518e-7ec9-95af-0748a6a09eca";
 
+    /**
+     * URL для получения OAuth-токена через Сбербанк API.
+     */
     private static final String AUTH_URL = "https://ngw.devices.sberbank.ru:9443/api/v2/oauth";
+
+    /**
+     * URL основного API GigaChat для отправки сообщений модели.
+     */
     private static final String API_URL = "https://gigachat.devices.sberbank.ru/api/v1/chat/completions";
 
+    /** HTTP-клиент с отключённой проверкой SSL-сертификата. */
     private final HttpClient client;
+
+    /** Текущий токен доступа, полученный после авторизации. */
     private String accessToken = null;
+
+    /** Время (в миллисекундах), после которого токен считается устаревшим. */
     private long tokenExpiryTime = 0;
 
+    /**
+     * Конструктор. Создаёт HTTP-клиент с отключённой SSL-валидацией —
+     * необходимо для работы с самоподписанными сертификатами Сбербанка в тестовой среде.
+     */
     public GigaChatBot() {
-        // Отключаем проверку SSL для тестирования
         this.client = createTrustAllHttpClient();
     }
 
+    /**
+     * Создаёт {@link HttpClient}, который доверяет любым SSL-сертификатам.
+     * <b>Внимание:</b> не использовать в продакшене — небезопасно.
+     *
+     * @return настроенный HTTP-клиент
+     */
     private HttpClient createTrustAllHttpClient() {
         try {
+            // Создаём TrustManager, который принимает любой сертификат без проверки
             TrustManager[] trustAllCerts = new TrustManager[]{
                     new X509TrustManager() {
                         public X509Certificate[] getAcceptedIssuers() {
                             return new X509Certificate[0];
                         }
+                        // Проверки клиентского и серверного сертификатов намеренно пропущены
                         public void checkClientTrusted(X509Certificate[] certs, String authType) {}
                         public void checkServerTrusted(X509Certificate[] certs, String authType) {}
                     }
             };
 
+            // Инициализируем SSL-контекст с нашим доверяющим-всему менеджером
             SSLContext sslContext = SSLContext.getInstance("TLS");
             sslContext.init(null, trustAllCerts, new SecureRandom());
 
             return HttpClient.newBuilder()
                     .sslContext(sslContext)
                     .build();
+
         } catch (Exception e) {
+            // Если не удалось создать кастомный клиент — падаем на стандартный
             e.printStackTrace();
             return HttpClient.newHttpClient();
         }
     }
 
+    /**
+     * Основной метод получения ответа от GigaChat.
+     * Перед запросом проверяет актуальность токена и при необходимости обновляет его.
+     *
+     * @param input текст сообщения от пользователя
+     * @return текстовый ответ модели или сообщение об ошибке
+     */
     @Override
     public String getResponse(String input) {
         try {
+            // Убеждаемся, что токен существует и не устарел
             ensureValidToken();
 
-            // Добавляем инструкцию в системное сообщение
+            // Формируем тело запроса в формате JSON.
+            // Системное сообщение запрещает модели использовать Markdown-разметку,
+            // чтобы ответ отображался как чистый текст в чате.
             String requestBody = String.format("""
                 {
                     "model": "GigaChat",
@@ -75,7 +123,7 @@ public class GigaChatBot implements IBot {
                 }
                 """, escapeJson(input));
 
-
+            // Строим HTTP-запрос с токеном в заголовке Bearer
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(API_URL))
                     .header("Content-Type", "application/json")
@@ -89,10 +137,8 @@ public class GigaChatBot implements IBot {
                     HttpResponse.BodyHandlers.ofString()
             );
 
-            System.out.println("API Response Status: " + response.statusCode());
-            System.out.println("API Response Body: " + response.body());
-
             if (response.statusCode() == 200) {
+                // Успешный ответ — парсим и возвращаем текст
                 return parseResponse(response.body());
             } else {
                 return "Ошибка API: " + response.body();
@@ -104,23 +150,26 @@ public class GigaChatBot implements IBot {
         }
     }
 
+    /**
+     * Проверяет, действителен ли текущий токен.
+     * Если токен отсутствует или истёк — запрашивает новый.
+     *
+     * @throws Exception если авторизация завершилась ошибкой
+     */
     private void ensureValidToken() throws Exception {
         if (accessToken == null || System.currentTimeMillis() >= tokenExpiryTime) {
             refreshAccessToken();
         }
     }
 
+    /**
+     * Выполняет OAuth-авторизацию и сохраняет новый токен.
+     * Использует AUTHORIZATION_KEY как готовый Base64-encoded заголовок Basic Auth.
+     *
+     * @throws Exception если HTTP-запрос завершился с ошибкой или токен не удалось распарсить
+     */
     private void refreshAccessToken() throws Exception {
-        System.out.println("Получение нового токена...");
-        System.out.println("Client ID: " + CLIENT_ID);
-        System.out.println("Auth Key: " + AUTHORIZATION_KEY.substring(0, Math.min(10, AUTHORIZATION_KEY.length())) + "...");
-
-        // Для GigaChat нужно использовать Authorization Key напрямую, без кодирования
-        // Authorization Key уже является готовым токеном для Basic авторизации
         String authHeader = "Basic " + AUTHORIZATION_KEY;
-
-        System.out.println("Auth Header: " + authHeader.substring(0, Math.min(30, authHeader.length())) + "...");
-
         String requestBody = "scope=GIGACHAT_API_PERS";
 
         HttpRequest request = HttpRequest.newBuilder()
@@ -132,27 +181,28 @@ public class GigaChatBot implements IBot {
                 .POST(HttpRequest.BodyPublishers.ofString(requestBody))
                 .build();
 
-        System.out.println("Sending auth request to: " + AUTH_URL);
-
         HttpResponse<String> response = client.send(
                 request,
                 HttpResponse.BodyHandlers.ofString()
         );
-
-        System.out.println("Auth Response Status: " + response.statusCode());
-        System.out.println("Auth Response Body: " + response.body());
 
         if (response.statusCode() != 200) {
             throw new RuntimeException("Ошибка авторизации: " + response.statusCode() + " - " + response.body());
         }
 
         parseAuthResponse(response.body());
-        System.out.println("Токен успешно получен");
     }
 
+    /**
+     * Извлекает {@code access_token} и время жизни токена из JSON-ответа авторизации.
+     * Используется ручной парсинг, чтобы не вводить зависимость от сторонних библиотек.
+     *
+     * @param json тело ответа от OAuth-эндпоинта
+     * @throws RuntimeException если токен не найден в ответе
+     */
     private void parseAuthResponse(String json) {
         try {
-            // Парсим access_token
+            // Ищем поле access_token в JSON-строке
             String tokenKey = "\"access_token\":\"";
             int tokenStart = json.indexOf(tokenKey);
             if (tokenStart != -1) {
@@ -163,18 +213,16 @@ public class GigaChatBot implements IBot {
                 }
             }
 
-            // Парсим expires_at
-            String expiresKey = "\"expires_at\":\"";
+            // Ищем поле expires_at — Unix timestamp в миллисекундах, без кавычек.
+            // Токен обновляем за 1 минуту до истечения; если поле отсутствует — берём 29 минут.
+            String expiresKey = "\"expires_at\":";
             int expiresStart = json.indexOf(expiresKey);
             if (expiresStart != -1) {
                 expiresStart += expiresKey.length();
-                int expiresEnd = json.indexOf("\"", expiresStart);
-                if (expiresEnd != -1) {
-                    // Устанавливаем время жизни токена (29 минут для запаса)
-                    tokenExpiryTime = System.currentTimeMillis() + 29 * 60 * 1000;
-                }
+                int expiresEnd = json.indexOf(",", expiresStart);
+                long expiresAt = Long.parseLong(json.substring(expiresStart, expiresEnd).trim());
+                tokenExpiryTime = expiresAt - 60 * 1000;
             } else {
-                // Если не нашли expires_at, устанавливаем 29 минут
                 tokenExpiryTime = System.currentTimeMillis() + 29 * 60 * 1000;
             }
 
@@ -187,31 +235,22 @@ public class GigaChatBot implements IBot {
         }
     }
 
+    /**
+     * Извлекает текст ответа модели из JSON-тела ответа GigaChat API.
+     *
+     * @param json тело ответа от API
+     * @return декодированный текст ответа или сообщение об ошибке
+     */
     private String parseResponse(String json) {
         try {
-            System.out.println("Parsing response: " + json);
-
-            // Парсим ответ от GigaChat
+            // Ищем поле content — оно содержит текст ответа модели
             String contentKey = "\"content\":\"";
             int contentStart = json.indexOf(contentKey);
             if (contentStart != -1) {
                 contentStart += contentKey.length();
                 int contentEnd = json.indexOf("\"", contentStart);
                 if (contentEnd != -1) {
-                    String content = json.substring(contentStart, contentEnd);
-                    return decodeJsonString(content);
-                }
-            }
-
-            // Пробуем другой формат
-            String messageKey = "\"message\":{\"content\":\"";
-            int messageStart = json.indexOf(messageKey);
-            if (messageStart != -1) {
-                messageStart += messageKey.length();
-                int messageEnd = json.indexOf("\"", messageStart);
-                if (messageEnd != -1) {
-                    String content = json.substring(messageStart, messageEnd);
-                    return decodeJsonString(content);
+                    return decodeJsonString(json.substring(contentStart, contentEnd));
                 }
             }
 
@@ -222,6 +261,13 @@ public class GigaChatBot implements IBot {
         }
     }
 
+    /**
+     * Декодирует escape-последовательности JSON в реальные символы.
+     * Например, {@code \n} → перенос строки, {@code \"} → кавычка.
+     *
+     * @param text строка с JSON escape-последовательностями
+     * @return строка с реальными символами
+     */
     private String decodeJsonString(String text) {
         return text.replace("\\n", "\n")
                 .replace("\\r", "\r")
@@ -230,6 +276,13 @@ public class GigaChatBot implements IBot {
                 .replace("\\\\", "\\");
     }
 
+    /**
+     * Экранирует специальные символы в строке для безопасной вставки в JSON.
+     * Предотвращает инъекции и синтаксические ошибки при формировании тела запроса.
+     *
+     * @param text исходная строка (может быть null)
+     * @return строка, безопасная для вставки в JSON-значение
+     */
     private String escapeJson(String text) {
         if (text == null) return "";
         return text.replace("\\", "\\\\")
@@ -239,13 +292,25 @@ public class GigaChatBot implements IBot {
                 .replace("\t", "\\t");
     }
 
+    /**
+     * GigaChatBot не обрабатывает команды — эта логика делегирована {@link CommandParser}.
+     *
+     * @param input входное сообщение
+     * @return всегда {@code false}
+     */
     @Override
     public boolean isCommand(String input) {
-        return false; // SimpleChatBot не обрабатывает команды
+        return false;
     }
 
+    /**
+     * GigaChatBot не выполняет команды — эта логика делегирована {@link CommandParser}.
+     *
+     * @param input входное сообщение
+     * @return всегда пустая строка
+     */
     @Override
     public String executeCommand(String input) {
-        return ""; // SimpleChatBot не выполняет команды
+        return "";
     }
 }

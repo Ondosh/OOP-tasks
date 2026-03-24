@@ -36,9 +36,12 @@ public class MainController {
             clearError();
 
         } catch (NumberFormatException e) {
+            // Здесь NumberFormatException - тип исключения, а е - просто имя переменной
+            // через которую получаем доступ к объекту ошибки.
             showError("Ошибка: введите числа");
         } catch (IllegalArgumentException e) {
             showError("Ошибка: " + e.getMessage());
+            // Здесь е.getMessage применяется для того, чтобы узнать что именно за ошибку мы поймали.
         }
     }
 
@@ -49,11 +52,11 @@ public class MainController {
 
     private void showError(String message) {
         errorLabel.setText(message);
-        errorLabel.setVisible(true);  // Только visible, managed уже true
+        errorLabel.setVisible(true);
     }
 
     private void clearError() {
-        errorLabel.setVisible(false);  // Только visible
+        errorLabel.setVisible(false);
     }
 
     @FXML

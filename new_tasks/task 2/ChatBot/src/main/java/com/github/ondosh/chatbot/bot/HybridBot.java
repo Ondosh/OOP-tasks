@@ -2,9 +2,8 @@ package com.github.ondosh.chatbot.bot;
 
 public class HybridBot implements IBot {
 
-    private final SimpleChatBot localBot   = new SimpleChatBot();
-    private final GigaChatBot gigaChatBot = new GigaChatBot();
-    private final CommandParser  parser    = new CommandParser();
+    private final GigaChatBot   gigaChatBot = new GigaChatBot();
+    private final CommandParser parser      = new CommandParser();
 
     @Override
     public boolean isCommand(String input) {
@@ -18,17 +17,17 @@ public class HybridBot implements IBot {
 
     @Override
     public String getResponse(String input) {
-        // Сначала проверяем команды
-        if (isCommand(input)) {
-            return executeCommand(input);
+        // 1. Команды (время, дата, математика, статистика)
+        if (parser.isCommand(input)) {
+            return parser.executeCommand(input);
         }
 
-        // Затем словарь
-        if (localBot.hasMatch(input)) {
-            return localBot.getResponse(input);
+        // 2. Заготовленные фразы (приветствия, прощания и т.д.)
+        if (parser.isPhrase(input)) {
+            return parser.executePhrase(input);
         }
 
-        // Иначе — LLM
+        // 3. Нейросеть — только если ничего не совпало
         return gigaChatBot.getResponse(input);
     }
 
