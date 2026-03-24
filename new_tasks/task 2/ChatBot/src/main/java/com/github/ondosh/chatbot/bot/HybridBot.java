@@ -1,5 +1,7 @@
 package com.github.ondosh.chatbot.bot;
 
+import com.github.ondosh.chatbot.model.UserProfile;
+
 public class HybridBot implements IBot {
 
     private final GigaChatBot   gigaChatBot = new GigaChatBot();
@@ -33,5 +35,9 @@ public class HybridBot implements IBot {
 
     public CommandParser getParser() {
         return parser;
+    }
+
+    public void setUserProfile(UserProfile profile) {
+        gigaChatBot.setUserProfile(profile);
     }
 }

@@ -5,13 +5,12 @@ import com.github.ondosh.chatbot.bot.HybridBot;
 import com.github.ondosh.chatbot.model.CurrentUser;
 import com.github.ondosh.chatbot.model.Message;
 import com.github.ondosh.chatbot.model.User;
+import com.github.ondosh.chatbot.model.UserProfile;
 import com.github.ondosh.chatbot.util.HistoryManager;
 
+import com.github.ondosh.chatbot.util.ProfileManager;
 import javafx.fxml.FXML;
-import javafx.scene.control.Label;
-import javafx.scene.control.ListCell;
-import javafx.scene.control.ListView;
-import javafx.scene.control.TextField;
+import javafx.scene.control.*;
 import javafx.scene.layout.HBox;
 
 import java.util.List;
@@ -24,6 +23,10 @@ public class ChatController {
     private User user;
     private final IBot bot = new HybridBot();
 
+    private enum ProfileState { NONE, WAITING_AGE, WAITING_CITY }
+    private ProfileState profileState = ProfileState.NONE;
+    private String pendingAge = null;
+
     @FXML
     public void initialize() {
         messageList.setCellFactory(list -> new MessageCell());
@@ -31,26 +34,34 @@ public class ChatController {
 
     public void setUser(User user) {
         this.user = user;
-
-        // Сохраняем пользователя глобально для Main.stop()
         CurrentUser.set(user);
 
-        // Загружаем историю из файла
-        List<Message> history = HistoryManager.load(user.getName());
+        // Загружаем профиль и передаём в бот
+        UserProfile profile = ProfileManager.load(user.getName());
+        if (profile == null) {
+            askForProfile(user.getName());
+        } else {
+            ((HybridBot) bot).setUserProfile(profile);
+        }
 
+        // Загружаем историю
+        List<Message> history = HistoryManager.load(user.getName());
         if (!history.isEmpty()) {
             for (Message message : history) {
                 user.addMessage(message);
                 messageList.getItems().add(message);
             }
             messageList.scrollTo(messageList.getItems().size() - 1);
-        } else {
-            // Первый запуск — показываем приветствие
-            Message greeting = new Message(
-                    "Бот", "Привет, " + user.getName() + "!", Message.Sender.BOT);
-            messageList.getItems().add(greeting);
-            user.addMessage(greeting);
         }
+    }
+
+    private void askForProfile(String name) {
+        profileState = ProfileState.WAITING_AGE;
+        Message msg = new Message("Бот",
+                "Привет, " + name + "! Давай познакомимся. Сколько тебе лет?",
+                Message.Sender.BOT);
+        messageList.getItems().add(msg);
+        user.addMessage(msg);
     }
 
     @FXML
@@ -60,18 +71,20 @@ public class ChatController {
 
         Message userMessage = new Message(user.getName(), text, Message.Sender.USER);
         messageList.getItems().add(userMessage);
-
-        // Сохраняем в историю
         user.addMessage(userMessage);
-        ((HybridBot) bot).getParser().countUserMessage();
-
         inputField.clear();
 
+        // Перехватываем ввод если идёт опрос профиля
+        if (profileState != ProfileState.NONE) {
+            handleProfileInput(text);
+            return;
+        }
+
+        // Обычная обработка сообщения
+        ((HybridBot) bot).getParser().countUserMessage();
         Message typing = new Message("Бот", "Печатает...", Message.Sender.BOT);
         messageList.getItems().add(typing);
-
-        Thread thread = getThread(text, typing);
-        thread.start();
+        getThread(text, typing).start();
     }
 
     private Thread getThread(String text, Message typing) {
@@ -155,6 +168,35 @@ public class ChatController {
 
             setGraphic(container);
             setStyle("-fx-background-color: transparent;");
+        }
+    }
+
+    private void handleProfileInput(String text) {
+        if (profileState == ProfileState.WAITING_AGE) {
+            pendingAge = text;
+            profileState = ProfileState.WAITING_CITY;
+
+            Message msg = new Message("Бот", "Из какого ты города?", Message.Sender.BOT);
+            messageList.getItems().add(msg);
+            user.addMessage(msg);
+
+        } else if (profileState == ProfileState.WAITING_CITY) {
+            int age = 0;
+            try { age = Integer.parseInt(pendingAge.trim()); } catch (NumberFormatException ignored) {}
+
+            UserProfile profile = new UserProfile(user.getName(), age, text);
+            ProfileManager.save(profile);
+            ((HybridBot) bot).setUserProfile(profile);
+
+            profileState = ProfileState.NONE;
+            pendingAge = null;
+
+            Message msg = new Message("Бот",
+                    "Запомнил! " + age + " лет, город — " + text + ".",
+                    Message.Sender.BOT);
+            messageList.getItems().add(msg);
+            user.addMessage(msg);
+            messageList.scrollTo(messageList.getItems().size() - 1);
         }
     }
 }

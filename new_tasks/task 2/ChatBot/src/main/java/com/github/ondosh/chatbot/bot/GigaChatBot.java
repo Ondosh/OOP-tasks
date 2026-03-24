@@ -1,5 +1,7 @@
 package com.github.ondosh.chatbot.bot;
 
+import com.github.ondosh.chatbot.model.UserProfile;
+
 import javax.net.ssl.*;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -52,6 +54,12 @@ public class GigaChatBot implements IBot {
      */
     public GigaChatBot() {
         this.client = createTrustAllHttpClient();
+    }
+
+    private UserProfile userProfile = null;
+
+    public void setUserProfile(UserProfile profile) {
+        this.userProfile = profile;
     }
 
     /**
@@ -111,7 +119,7 @@ public class GigaChatBot implements IBot {
                     "messages": [
                         {
                             "role": "system",
-                            "content": "Отвечай только обычным текстом. НЕ используй Markdown, HTML или любое другое форматирование. Не используй символы *, #, `, [], (), >. Отвечай простыми предложениями без специального форматирования."
+                            "content": "%s"
                         },
                         {
                             "role": "user",
@@ -121,7 +129,7 @@ public class GigaChatBot implements IBot {
                     "temperature": 0.7,
                     "max_tokens": 1000
                 }
-                """, escapeJson(input));
+                """, escapeJson(buildSystemPrompt()), escapeJson(input));
 
             // Строим HTTP-запрос с токеном в заголовке Bearer
             HttpRequest request = HttpRequest.newBuilder()
@@ -220,6 +228,12 @@ public class GigaChatBot implements IBot {
             if (expiresStart != -1) {
                 expiresStart += expiresKey.length();
                 int expiresEnd = json.indexOf(",", expiresStart);
+
+                // Если запятой нет — expires_at последнее поле, берём до закрывающей скобки
+                if (expiresEnd == -1) {
+                    expiresEnd = json.indexOf("}", expiresStart);
+                }
+
                 long expiresAt = Long.parseLong(json.substring(expiresStart, expiresEnd).trim());
                 tokenExpiryTime = expiresAt - 60 * 1000;
             } else {
@@ -290,6 +304,16 @@ public class GigaChatBot implements IBot {
                 .replace("\n", "\\n")
                 .replace("\r", "\\r")
                 .replace("\t", "\\t");
+    }
+
+    private String buildSystemPrompt() {
+        String base = "Отвечай только обычным текстом. НЕ используй Markdown, HTML или любое другое форматирование. " +
+                "Не используй символы *, #, `, [], (), >. Отвечай простыми предложениями без специального форматирования.";
+
+        if (userProfile == null) return base;
+
+        return base + " Собеседника зовут " + userProfile.getName() +
+                ", ему " + userProfile.getAge() + " лет, он из города " + userProfile.getCity() + ".";
     }
 
     /**
