@@ -14,12 +14,9 @@ import java.util.regex.Pattern;
  */
 public class CommandParser {
 
-    // ---------------------------------------------------------------
     // Статистика сообщений
-    // ---------------------------------------------------------------
-
     /** Общее количество сообщений в чате (пользователь + бот). */
-    private int totalMessages = 0;
+    private int totalMessages = 1;
 
     /** Количество сообщений от пользователя. */
     private int userMessages  = 0;
@@ -36,10 +33,8 @@ public class CommandParser {
     /** Вызывается из ChatController при каждом ответе бота. */
     public void countBotMessage()  { botMessages++;  totalMessages++; }
 
-    // ---------------------------------------------------------------
     // Фразовые паттерны — заготовленные ответы на типовые реплики
     // Ключ — скомпилированный регулярный Pattern, значение — текст ответа
-    // ---------------------------------------------------------------
     private static final Map<Pattern, String> PHRASE_PATTERNS = new LinkedHashMap<>();
 
     static {

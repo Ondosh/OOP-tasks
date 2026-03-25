@@ -7,8 +7,18 @@ import javafx.application.Application;
 import javafx.stage.Stage;
 import com.github.ondosh.chatbot.util.SceneSwitcher;
 
+/**
+ * Точка входа в приложение.
+ * Наследует {@link Application} — это требование JavaFX для запуска UI.
+ */
 public class Main extends Application {
 
+    /**
+     * Вызывается JavaFX при старте приложения.
+     * Загружает экран приветствия и устанавливает заголовок окна.
+     *
+     * @param stage главное окно приложения, создаётся JavaFX автоматически
+     */
     @Override
     public void start(Stage stage) {
         SceneSwitcher.switchScene(stage,
@@ -18,12 +28,21 @@ public class Main extends Application {
         stage.show();
     }
 
+    /**
+     * Вызывается JavaFX автоматически при закрытии окна.
+     * Сохраняет историю сообщений и профиль пользователя в файлы,
+     * чтобы данные не потерялись между сессиями.
+     */
     @Override
     public void stop() {
         HistoryManager.save(CurrentUser.get());
         ProfileManager.save(CurrentUser.getProfile());
     }
 
+    /**
+     * Стандартная точка входа Java.
+     * Делегирует запуск в JavaFX через {@link Application#launch}.
+     */
     public static void main(String[] args) {
         launch(args);
     }
