@@ -18,17 +18,16 @@ import java.util.UUID;
  */
 public class GigaChatBot implements IBot {
 
-    /**
-     * Ключ авторизации в формате Base64 (Client ID + Client Secret).
-     * Используется в заголовке Authorization: Basic <ключ> при получении токена.
-     */
-    private static final String AUTHORIZATION_KEY = "MDE5Y2Y1M2MtNTE4ZS03ZWM5LTk1YWYtMDc0OGE2YTA5ZWNhOjUwYWVhMjg0LTYwNWYtNDRjYi1iNzY3LWYyMzRmYjI1MTQ4Zg==";
+    private static final String AUTHORIZATION_KEY = readKeyFromFile("Auth_key.txt");
+    private static final String CLIENT_ID = readKeyFromFile("client_id.txt");
 
-    /**
-     * Идентификатор приложения (Client ID), выданный при регистрации в GigaChat API.
-     */
-    private static final String CLIENT_ID = "019cf53c-518e-7ec9-95af-0748a6a09eca";
-
+    private static String readKeyFromFile(String fileName) {
+        try {
+            return new String(Files.readAllBytes(Paths.get(fileName))).trim();
+        } catch (IOException e) {
+            throw new RuntimeException("Не удалось прочитать файл: " + fileName, e);
+        }
+    }
     /**
      * URL для получения OAuth-токена через Сбербанк API.
      */

@@ -75,3 +75,6 @@ buildNumber.properties
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+Auth_key.txt
+client_id.txt
