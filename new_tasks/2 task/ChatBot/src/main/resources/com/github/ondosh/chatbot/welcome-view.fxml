@@ -1,20 +1,47 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
+<?import javafx.scene.text.*?>
 
 <VBox xmlns:fx="http://javafx.com/fxml"
       fx:controller="com.github.ondosh.chatbot.controller.WelcomeController"
-      spacing="15" alignment="CENTER"
-      style="-fx-padding: 40;">
+      spacing="18" alignment="CENTER"
+      style="-fx-background-color: #1e1e2e; -fx-padding: 50;">
 
-    <Label text="Добро пожаловать!" style="-fx-font-size: 18px;"/>
-    <Label text="Введите ваше имя:"/>
+    <Label text="Добро пожаловать!"
+           style="-fx-font-family: 'Segoe UI';
+                  -fx-font-size: 24px;
+                  -fx-font-weight: bold;
+                  -fx-text-fill: #bd93f9;"/>
 
-    <TextField fx:id="nameField" promptText="Ваше имя"
-               maxWidth="200"
-               onAction="#onStartChat"/>
+    <Label text="Введите ваше имя:"
+           style="-fx-font-family: 'Segoe UI';
+                  -fx-font-size: 14px;
+                  -fx-text-fill: #f8f8f2;"/>
+
+    <TextField fx:id="nameField"
+               promptText="Ваше имя"
+               maxWidth="220"
+               onAction="#onStartChat"
+               style="-fx-background-color: #2a2a3e;
+                      -fx-text-fill: #f8f8f2;
+                      -fx-prompt-text-fill: #6272a4;
+                      -fx-border-color: #bd93f9;
+                      -fx-border-radius: 6;
+                      -fx-background-radius: 6;
+                      -fx-font-family: 'Segoe UI';
+                      -fx-font-size: 13px;
+                      -fx-padding: 8 12;"/>
 
     <Button text="Начать чат" onAction="#onStartChat"
-            defaultButton="true"/>
+            defaultButton="true"
+            style="-fx-background-color: #bd93f9;
+                   -fx-text-fill: #1e1e2e;
+                   -fx-font-family: 'Segoe UI';
+                   -fx-font-weight: bold;
+                   -fx-font-size: 14px;
+                   -fx-background-radius: 6;
+                   -fx-padding: 10 30;
+                   -fx-cursor: hand;"/>
 
 </VBox>

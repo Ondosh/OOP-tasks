@@ -1,20 +1,46 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
+<?import javafx.scene.text.*?>
 
 <VBox xmlns:fx="http://javafx.com/fxml"
       fx:controller="com.github.ondosh.chatbot.controller.ChatController"
-      spacing="10"
-      style="-fx-padding: 15;">
+      spacing="12"
+      style="-fx-background-color: #1e1e2e; -fx-padding: 15;">
 
-    <ListView fx:id="messageList" VBox.vgrow="ALWAYS"/>
+    <ListView fx:id="messageList" VBox.vgrow="ALWAYS"
+              style="-fx-background-color: #2a2a3e;
+                     -fx-border-color: #44475a;
+                     -fx-border-radius: 8;
+                     -fx-background-radius: 8;
+                     -fx-font-family: 'Segoe UI';
+                     -fx-font-size: 13px;
+                     -fx-control-inner-background: #2a2a3e;
+                     -fx-text-fill: #f8f8f2;"/>
 
     <HBox spacing="10">
         <TextField fx:id="inputField"
                    promptText="Введите сообщение..."
                    HBox.hgrow="ALWAYS"
-                   onAction="#onSendMessage"/>
-        <Button text="Отправить" onAction="#onSendMessage"/>
+                   onAction="#onSendMessage"
+                   style="-fx-background-color: #2a2a3e;
+                          -fx-text-fill: #f8f8f2;
+                          -fx-prompt-text-fill: #6272a4;
+                          -fx-border-color: #44475a;
+                          -fx-border-radius: 6;
+                          -fx-background-radius: 6;
+                          -fx-font-family: 'Segoe UI';
+                          -fx-font-size: 13px;
+                          -fx-padding: 8 12;"/>
+        <Button text="Отправить" onAction="#onSendMessage"
+                style="-fx-background-color: #bd93f9;
+                       -fx-text-fill: #1e1e2e;
+                       -fx-font-family: 'Segoe UI';
+                       -fx-font-weight: bold;
+                       -fx-font-size: 13px;
+                       -fx-background-radius: 6;
+                       -fx-padding: 8 16;
+                       -fx-cursor: hand;"/>
     </HBox>
 
 </VBox>

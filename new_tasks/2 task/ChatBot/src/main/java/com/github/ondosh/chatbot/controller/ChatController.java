@@ -9,6 +9,7 @@ import com.github.ondosh.chatbot.model.UserProfile;
 import com.github.ondosh.chatbot.util.HistoryManager;
 
 import com.github.ondosh.chatbot.util.ProfileManager;
+import javafx.application.Platform;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.layout.HBox;
@@ -65,7 +66,9 @@ public class ChatController {
      */
     @FXML
     public void initialize() {
+        Platform.runLater(() -> inputField.requestFocus());
         messageList.setCellFactory(list -> new MessageCell());
+        messageList.setFocusTraversable(false);
     }
 
     /**
@@ -156,6 +159,8 @@ public class ChatController {
 
         // Запрос к боту выполняется в daemon-потоке, чтобы не блокировать UI
         getThread(text, typing).start();
+
+        inputField.requestFocus();
     }
 
     /**

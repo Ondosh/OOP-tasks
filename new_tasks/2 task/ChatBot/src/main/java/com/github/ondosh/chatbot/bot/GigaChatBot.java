@@ -3,10 +3,14 @@ package com.github.ondosh.chatbot.bot;
 import com.github.ondosh.chatbot.model.UserProfile;
 
 import javax.net.ssl.*;
+import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.security.SecureRandom;
 import java.security.cert.X509Certificate;
 import java.util.UUID;
@@ -19,11 +23,13 @@ import java.util.UUID;
 public class GigaChatBot implements IBot {
 
     private static final String AUTHORIZATION_KEY = readKeyFromFile("Auth_key.txt");
-    private static final String CLIENT_ID = readKeyFromFile("client_id.txt");
+    private static final String CLIENT_ID = readKeyFromFile("Client_id.txt");
 
     private static String readKeyFromFile(String fileName) {
         try {
-            return new String(Files.readAllBytes(Paths.get(fileName))).trim();
+            // Ищем файл рядом с jar или в папке проекта
+            Path path = Paths.get(System.getProperty("user.dir"), fileName);
+            return new String(Files.readAllBytes(path)).trim();
         } catch (IOException e) {
             throw new RuntimeException("Не удалось прочитать файл: " + fileName, e);
         }
