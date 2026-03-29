@@ -4,8 +4,11 @@ import com.github.ondosh.chatbot.model.CurrentUser;
 import com.github.ondosh.chatbot.util.HistoryManager;
 import com.github.ondosh.chatbot.util.ProfileManager;
 import javafx.application.Application;
+import javafx.scene.image.Image;
 import javafx.stage.Stage;
 import com.github.ondosh.chatbot.util.SceneSwitcher;
+
+import java.util.Objects;
 
 /**
  * Точка входа в приложение.
@@ -26,6 +29,9 @@ public class Main extends Application {
         );
         stage.setTitle("ChatBot");
         stage.show();
+        stage.getIcons().add(
+                new Image(Objects.requireNonNull(getClass().getResourceAsStream("/images/icon.png")))
+        );
     }
 
     /**
