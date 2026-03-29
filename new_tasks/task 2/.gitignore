@@ -36,3 +36,6 @@ build/
 
 ### Mac OS ###
 .DS_Store
+
+chat_history.txt
+user_profile.txt
