@@ -12,9 +12,12 @@ import java.util.regex.Pattern;
  * — «команды» (время, дата, арифметика, статистика) с вычисляемым результатом.
  * Также ведёт счётчики сообщений для команды «статистика».
  */
-public class CommandParser {
+public class SimpleBot implements IBot {
 
+    // ---------------------------------------------------------------
     // Статистика сообщений
+    // ---------------------------------------------------------------
+
     /** Общее количество сообщений в чате (пользователь + бот). */
     private int totalMessages = 1;
 
@@ -33,12 +36,14 @@ public class CommandParser {
     /** Вызывается из ChatController при каждом ответе бота. */
     public void countBotMessage()  { botMessages++;  totalMessages++; }
 
+    // ---------------------------------------------------------------
     // Фразовые паттерны — заготовленные ответы на типовые реплики
     // Ключ — скомпилированный регулярный Pattern, значение — текст ответа
+    // ---------------------------------------------------------------
     private static final Map<Pattern, String> PHRASE_PATTERNS = new LinkedHashMap<>();
 
     static {
-        // Приветствия — предлагаем пользователю узнать о командах
+        // Приветствия
         PHRASE_PATTERNS.put(re("привет|здравствуй|хай|добрый\\s+день|добрый\\s+вечер|доброе\\s+утро"),
                 "Привет! Если хочешь узнать команды, то напиши \"помоги\". ");
 
@@ -93,31 +98,35 @@ public class CommandParser {
     // ---------------------------------------------------------------
 
     /** Запрос текущего времени. */
-    private static final Pattern P_TIME  = Pattern.compile(
+    private static final Pattern P_TIME = Pattern.compile(
             "который час|сколько времени|какое время|время", Pattern.CASE_INSENSITIVE);
 
     /** Запрос текущей даты. */
-    private static final Pattern P_DATE  = Pattern.compile(
+    private static final Pattern P_DATE = Pattern.compile(
             "какая дата|какой день|какое сегодня", Pattern.CASE_INSENSITIVE);
 
     /** Запрос статистики сообщений. */
-    private static final Pattern P_STAT  = Pattern.compile(
+    private static final Pattern P_STAT = Pattern.compile(
             "статистика|сколько сообщений", Pattern.CASE_INSENSITIVE);
 
     /** Умножение: «умножь X на Y». Группы 1 и 2 — операнды. */
-    private static final Pattern P_MUL   = Pattern.compile(
+    private static final Pattern P_MUL  = Pattern.compile(
             "умножь\\s+(-?[\\d.,]+)\\s+на\\s+(-?[\\d.,]+)", Pattern.CASE_INSENSITIVE);
 
     /** Деление: «раздели X на Y». Группы 1 и 2 — операнды. */
-    private static final Pattern P_DIV   = Pattern.compile(
+    private static final Pattern P_DIV  = Pattern.compile(
             "раздели\\s+(-?[\\d.,]+)\\s+на\\s+(-?[\\d.,]+)", Pattern.CASE_INSENSITIVE);
 
     /** Сложение: «сложи X и Y». Группы 1 и 2 — операнды. */
-    private static final Pattern P_ADD   = Pattern.compile(
+    private static final Pattern P_ADD  = Pattern.compile(
             "сложи\\s+(-?[\\d.,]+)\\s+и\\s+(-?[\\d.,]+)", Pattern.CASE_INSENSITIVE);
 
-    /** Вычитание: «вычти X из Y». Группы 1 и 2 — операнды. */
-    private static final Pattern P_SUB   = Pattern.compile(
+    /**
+     * Вычитание: «вычти X из Y».
+     * Группа 1 — вычитаемое (X), группа 2 — уменьшаемое (Y).
+     * Результат вычисляется как group(2) - group(1).
+     */
+    private static final Pattern P_SUB  = Pattern.compile(
             "вычти\\s+(-?[\\d.,]+)\\s+из\\s+(-?[\\d.,]+)", Pattern.CASE_INSENSITIVE);
 
     // ---------------------------------------------------------------
@@ -125,47 +134,29 @@ public class CommandParser {
     // ---------------------------------------------------------------
 
     /**
-     * Определяет, является ли сообщение «простой фразой» с заготовленным ответом.
-     *
-     * Фраза считается простой только если вся значимая часть сообщения
-     * покрывается паттерном — остаток после совпадения не длиннее порога.
+     * Проверяет, является ли сообщение простой фразой, и если да — возвращает ответ.
+     * <p>
+     * Фраза считается простой только если вся значимая часть сообщения покрывается
+     * паттерном — остаток после совпадения не длиннее порога (8 символов).
      * Это защищает от ложных срабатываний вроде «привет, объясни квантовую физику»,
      * где слово «привет» есть, но смысл сообщения требует нейросети.
      *
      * @param input входное сообщение пользователя
-     * @return true, если сообщение покрывается фразовым паттерном
+     * @return текст ответа если фраза распознана, иначе {@code null}
      */
-    public boolean isPhrase(String input) {
+    public String tryPhrase(String input) {
         String lower = input.toLowerCase().trim();
-        for (Pattern p : PHRASE_PATTERNS.keySet()) {
-            var m = p.matcher(lower);
+        for (Map.Entry<Pattern, String> entry : PHRASE_PATTERNS.entrySet()) {
+            var m = entry.getKey().matcher(lower);
             if (m.find()) {
-                // Считаем «хвост»: всё, что не вошло в совпадение, без пробелов и знаков препинания
                 String leftover = (lower.substring(0, m.start()) + lower.substring(m.end()))
                         .replaceAll("[\\s,!?.]+", "");
                 if (leftover.length() <= 8) {
-                    return true;
+                    return entry.getValue();
                 }
             }
         }
-        return false;
-    }
-
-    /**
-     * Возвращает заготовленный ответ на фразу.
-     * Перебирает паттерны в порядке добавления (LinkedHashMap сохраняет порядок).
-     *
-     * @param input входное сообщение пользователя
-     * @return текст ответа или fallback-фраза, если паттерн не найден
-     */
-    public String executePhrase(String input) {
-        String lower = input.toLowerCase().trim();
-        for (Map.Entry<Pattern, String> entry : PHRASE_PATTERNS.entrySet()) {
-            if (entry.getKey().matcher(lower).find()) {
-                return entry.getValue();
-            }
-        }
-        return getFallback(lower);
+        return null;
     }
 
     /**
@@ -189,8 +180,8 @@ public class CommandParser {
     /**
      * Выполняет команду и возвращает результат.
      * Проверка идёт в порядке: время → дата → статистика → арифметика.
-     * Для арифметики повторно используется один Matcher через usePattern/reset,
-     * чтобы не создавать лишние объекты.
+     * Для арифметики один {@link java.util.regex.Matcher} переиспользуется
+     * через {@code usePattern/reset}, чтобы не создавать лишние объекты.
      *
      * @param input входное сообщение пользователя
      * @return строка с результатом команды
@@ -198,7 +189,6 @@ public class CommandParser {
     public String executeCommand(String input) {
         String lower = input.toLowerCase().trim();
 
-        // Один Matcher переиспользуется для всех арифметических паттернов
         var m = P_MUL.matcher(lower);
 
         if (P_TIME.matcher(lower).find())
@@ -216,7 +206,6 @@ public class CommandParser {
 
         if (m.usePattern(P_DIV).reset(lower).find()) {
             double b = parseNum(m.group(2));
-            // Отдельная проверка деления на ноль
             return b == 0 ? "На ноль делить нельзя!"
                     : formatResult(parseNum(m.group(1)) / b);
         }
@@ -224,6 +213,7 @@ public class CommandParser {
         if (m.usePattern(P_ADD).reset(lower).find())
             return formatResult(parseNum(m.group(1)) + parseNum(m.group(2)));
 
+        // group(1) — вычитаемое, group(2) — уменьшаемое (см. P_SUB)
         if (m.usePattern(P_SUB).reset(lower).find())
             return formatResult(parseNum(m.group(2)) - parseNum(m.group(1)));
 
@@ -259,15 +249,39 @@ public class CommandParser {
     }
 
     /**
-     * Возвращает универсальный ответ, если ни один паттерн не совпал.
-     * Адаптируется под тип сообщения: вопрос, очень короткое или обычное.
+     * Возвращает ответ на сообщение пользователя.
+     * Сначала проверяет команды, затем фразы.
+     * Если ничего не совпало — возвращает fallback-ответ.
      *
-     * @param input входное сообщение (уже в нижнем регистре)
-     * @return текст fallback-ответа
+     * @param input входное сообщение пользователя
+     * @return текст ответа
      */
-    private String getFallback(String input) {
-        if (input.endsWith("?"))   return "Хороший вопрос! Я пока не знаю ответа.";
-        if (input.length() < 4)    return "Можешь написать подробнее?";
-        return "Интересно... Расскажи мне больше об этом.";
+    @Override
+    public String getResponse(String input) {
+        if (isCommand(input)) {
+            return executeCommand(input);
+        }
+
+        String phrase = tryPhrase(input);
+        if (phrase != null) {
+            return phrase;
+        }
+
+        return "Я не понимаю. Напиши \"помоги\" чтобы узнать что я умею.";
     }
+
+    /** Идентификатор бота. */
+    @Override
+    public String getBotName() {
+        return "SimpleBot";
+    }
+
+    /**
+     * SimpleBot работает локально и всегда доступен.
+     */
+    @Override
+    public boolean isAvailable() {
+        return true;
+    }
+
 }

@@ -5,17 +5,7 @@ import com.github.ondosh.chatbot.model.UserProfile;
 public class HybridBot implements IBot {
 
     private final GigaChatBot   gigaChatBot = new GigaChatBot();
-    private final CommandParser parser      = new CommandParser();
-
-    @Override
-    public boolean isCommand(String input) {
-        return parser.isCommand(input);
-    }
-
-    @Override
-    public String executeCommand(String input) {
-        return parser.executeCommand(input);
-    }
+    private final SimpleBot parser      = new SimpleBot();
 
     @Override
     public String getResponse(String input) {
@@ -25,19 +15,30 @@ public class HybridBot implements IBot {
         }
 
         // 2. Заготовленные фразы (приветствия, прощания и т.д.)
-        if (parser.isPhrase(input)) {
-            return parser.executePhrase(input);
+        String phrase = parser.tryPhrase(input);
+        if (phrase != null) {
+            return phrase;
         }
 
         // 3. Нейросеть — только если ничего не совпало
         return gigaChatBot.getResponse(input);
     }
 
-    public CommandParser getParser() {
+    public SimpleBot getParser() {
         return parser;
     }
 
     public void setUserProfile(UserProfile profile) {
         gigaChatBot.setUserProfile(profile);
+    }
+
+    @Override
+    public String getBotName() {
+        return "HybridBot";
+    }
+
+    @Override
+    public boolean isAvailable() {
+        return gigaChatBot.isAvailable();
     }
 }

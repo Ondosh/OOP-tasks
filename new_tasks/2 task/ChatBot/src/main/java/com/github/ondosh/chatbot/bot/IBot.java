@@ -1,12 +1,17 @@
 package com.github.ondosh.chatbot.bot;
 
 public interface IBot {
-    // Основной метод ответа
+
+    /** Возвращает ответ на сообщение пользователя. */
     String getResponse(String input);
 
-    // Проверка — является ли сообщение командой
-    boolean isCommand(String input);
+    /** Возвращает имя/идентификатор бота (например, "GigaChat", "HybridBot"). */
+    default String getBotName() {
+        return "Bot";
+    }
 
-    // Выполнение команды с параметрами
-    String executeCommand(String input);
+    /** Проверяет доступность бота (например, есть ли соединение с API). */
+    default boolean isAvailable() {
+        return true;
+    }
 }

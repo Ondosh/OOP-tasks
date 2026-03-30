@@ -22,18 +22,18 @@ import java.util.UUID;
  */
 public class GigaChatBot implements IBot {
 
-    private static final String AUTHORIZATION_KEY = readKeyFromFile("Auth_key.txt");
-    private static final String CLIENT_ID = readKeyFromFile("Client_id.txt");
+    private static final String AUTHORIZATION_KEY = readKeyFromFile();
 
-    private static String readKeyFromFile(String fileName) {
+    private static String readKeyFromFile() {
         try {
             // Ищем файл рядом с jar или в папке проекта
-            Path path = Paths.get(System.getProperty("user.dir"), fileName);
+            Path path = Paths.get(System.getProperty("user.dir"), "Auth_key.txt");
             return new String(Files.readAllBytes(path)).trim();
         } catch (IOException e) {
-            throw new RuntimeException("Не удалось прочитать файл: " + fileName, e);
+            throw new RuntimeException("Не удалось прочитать файл: " + "Auth_key.txt", e);
         }
     }
+
     /**
      * URL для получения OAuth-токена через Сбербанк API.
      */
@@ -44,13 +44,19 @@ public class GigaChatBot implements IBot {
      */
     private static final String API_URL = "https://gigachat.devices.sberbank.ru/api/v1/chat/completions";
 
-    /** HTTP-клиент с отключённой проверкой SSL-сертификата. */
+    /**
+     * HTTP-клиент с отключённой проверкой SSL-сертификата.
+     */
     private final HttpClient client;
 
-    /** Текущий токен доступа, полученный после авторизации. */
+    /**
+     * Текущий токен доступа, полученный после авторизации.
+     */
     private String accessToken = null;
 
-    /** Время (в миллисекундах), после которого токен считается устаревшим. */
+    /**
+     * Время (в миллисекундах), после которого токен считается устаревшим.
+     */
     private long tokenExpiryTime = 0;
 
     /**
@@ -81,9 +87,13 @@ public class GigaChatBot implements IBot {
                         public X509Certificate[] getAcceptedIssuers() {
                             return new X509Certificate[0];
                         }
+
                         // Проверки клиентского и серверного сертификатов намеренно пропущены
-                        public void checkClientTrusted(X509Certificate[] certs, String authType) {}
-                        public void checkServerTrusted(X509Certificate[] certs, String authType) {}
+                        public void checkClientTrusted(X509Certificate[] certs, String authType) {
+                        }
+
+                        public void checkServerTrusted(X509Certificate[] certs, String authType) {
+                        }
                     }
             };
 
@@ -119,22 +129,22 @@ public class GigaChatBot implements IBot {
             // Системное сообщение запрещает модели использовать Markdown-разметку,
             // чтобы ответ отображался как чистый текст в чате.
             String requestBody = String.format("""
-                {
-                    "model": "GigaChat",
-                    "messages": [
-                        {
-                            "role": "system",
-                            "content": "%s"
-                        },
-                        {
-                            "role": "user",
-                            "content": "%s"
-                        }
-                    ],
-                    "temperature": 0.7,
-                    "max_tokens": 1000
-                }
-                """, escapeJson(buildSystemPrompt()), escapeJson(input));
+                    {
+                        "model": "GigaChat",
+                        "messages": [
+                            {
+                                "role": "system",
+                                "content": "%s"
+                            },
+                            {
+                                "role": "user",
+                                "content": "%s"
+                            }
+                        ],
+                        "temperature": 0.7,
+                        "max_tokens": 1000
+                    }
+                    """, escapeJson(buildSystemPrompt()), escapeJson(input));
 
             // Строим HTTP-запрос с токеном в заголовке Bearer
             HttpRequest request = HttpRequest.newBuilder()
@@ -321,25 +331,18 @@ public class GigaChatBot implements IBot {
                 ", ему " + userProfile.getAge() + " лет, он из города " + userProfile.getCity() + ".";
     }
 
-    /**
-     * GigaChatBot не обрабатывает команды — эта логика делегирована {@link CommandParser}.
-     *
-     * @param input входное сообщение
-     * @return всегда {@code false}
-     */
     @Override
-    public boolean isCommand(String input) {
-        return false;
+    public String getBotName() {
+        return "GigaChat";
     }
 
-    /**
-     * GigaChatBot не выполняет команды — эта логика делегирована {@link CommandParser}.
-     *
-     * @param input входное сообщение
-     * @return всегда пустая строка
-     */
     @Override
-    public String executeCommand(String input) {
-        return "";
+    public boolean isAvailable() {
+        try {
+            ensureValidToken();
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
     }
 }
