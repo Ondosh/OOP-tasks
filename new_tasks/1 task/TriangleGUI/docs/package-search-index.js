@@ -1,0 +1,1 @@
+packageSearchIndex = [{"l":"All Packages","u":"allpackages-index.html"},{"m":"com.github.ondosh.trianglegui","l":"com.github.ondosh.trianglegui"}];updateSearchResults();
