@@ -1,1 +1,0 @@
-moduleSearchIndex = [{"l":"com.github.ondosh.chatbot"}];updateSearchResults();
