@@ -5,6 +5,6 @@ class MainController
 class Triangle
 
 MainApplication ..> MainController : загружает
-MainController -- Triangle : использует
+MainController *-- Triangle : использует
 
 @enduml
