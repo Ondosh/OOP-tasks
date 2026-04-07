@@ -22,18 +22,23 @@ public class WelcomeController {
      */
     @FXML
     private void onStartChat() {
+        // Получаем текст из поля для ввода имени, предварительно убираем лишние пробелы через trim
         String name = nameField.getText().trim();
 
-        // Не пускаем дальше с пустым именем — подсвечиваем поле красным
+        // Не пускаем дальше с пустым именем - подсвечиваем поле красным
         if (name.isEmpty()) {
             nameField.setPromptText("Введите имя!");
-            nameField.setStyle("-fx-border-color: red;");
+            nameField.setStyle("-fx-border-color: red;"); // css style для поля ввода имени
             return;
         }
 
+        // создаём указатель на новый экземпляр класса User
         User user = new User(name);
 
         // Получаем текущее окно для передачи в SceneSwitcher
+        // Преобразование в Stage необходимо для того, чтобы
+        // в дальнейшем взаимодействовать с окном как со сценой
+        // У класса Window просто нет нужных методов
         Stage stage = (Stage) nameField.getScene().getWindow();
 
         // Переключаем сцену и получаем контроллер нового окна
