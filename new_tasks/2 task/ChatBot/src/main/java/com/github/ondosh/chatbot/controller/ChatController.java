@@ -35,9 +35,7 @@ public class ChatController {
     private User user;
 
     /**
-     * Экземпляр бота. Используется интерфейс IBot для слабой связанности,
-     * но в некоторых местах приводится к HybridBot для доступа к специфичным методам
-     * (getParser, setUserProfile).
+     * Экземпляр бота.
      */
     private final HybridBot bot = new HybridBot();
 
