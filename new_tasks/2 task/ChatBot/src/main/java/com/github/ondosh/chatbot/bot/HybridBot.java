@@ -7,8 +7,29 @@ public class HybridBot implements IBot {
     private final GigaChatBot   gigaChatBot = new GigaChatBot();
     private final SimpleBot parser      = new SimpleBot();
 
+
     public void countUserMessage() {
         parser.countUserMessage();
+    }
+
+    public void countBotMessage() {
+        parser.countBotMessage();
+    }
+
+    public int getTotalMessages() {
+        return parser.getTotalMessages();
+    }
+
+    public int getUserMessages() {
+        return parser.getUserMessages();
+    }
+
+    public int getBotMessages() {
+        return parser.getBotMessages();
+    }
+
+    public void setStats(int total, int user, int bot) {
+        parser.setStats(total, user, bot);
     }
 
     @Override
@@ -26,10 +47,6 @@ public class HybridBot implements IBot {
 
         // 3. Нейросеть — только если ничего не совпало
         return gigaChatBot.getResponse(input);
-    }
-
-    public SimpleBot getParser() {
-        return parser;
     }
 
     public void setUserProfile(UserProfile profile) {

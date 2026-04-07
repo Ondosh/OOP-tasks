@@ -6,14 +6,16 @@ import com.github.ondosh.chatbot.model.Message;
 import com.github.ondosh.chatbot.model.User;
 import com.github.ondosh.chatbot.model.UserProfile;
 import com.github.ondosh.chatbot.util.HistoryManager;
-
 import com.github.ondosh.chatbot.util.ProfileManager;
-import javafx.application.Platform;
+import com.github.ondosh.chatbot.util.StatsManager;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Region;
 
 import java.util.List;
+
+import static com.github.ondosh.chatbot.util.StatsManager.clearStats;
 
 /**
  * Контроллер основного окна чата.
@@ -37,7 +39,7 @@ public class ChatController {
     /**
      * Экземпляр бота.
      */
-    private final HybridBot bot = new HybridBot();
+    private HybridBot bot;
 
     // Состояние опроса профиля
 
@@ -63,37 +65,40 @@ public class ChatController {
      */
     @FXML
     public void initialize() {
-        // Просим после выполнения всех задач сделать фокус на поле ввода
-        Platform.runLater(() -> inputField.requestFocus());
-        // Создаём "фабрику полей", нужно для кастомных "полей" сообщений
-        messageList.setCellFactory(list -> new MessageCell());
-        messageList.setFocusTraversable(false);
+        // Устанавливаем фабрику ячеек
+        messageList.setCellFactory(lv -> new MessageCell());
+
+        // Добавляем обработчик закрытия окна
+        messageList.sceneProperty().addListener((obs, oldScene, newScene) -> {
+            if (newScene != null) {
+                newScene.windowProperty().addListener((obs2, oldWindow, newWindow) -> {
+                    if (newWindow != null) {
+                        newWindow.setOnCloseRequest(event -> saveAll());
+                    }
+                });
+            }
+        });
     }
 
     /**
      * Устанавливает текущего пользователя и подготавливает чат к работе.
-     * Вызывается из WelcomeController после ввода имени.
-     *
-     * Логика:
-     * 1. Сохраняем пользователя глобально (для Main.stop()).
-     * 2. Пробуем загрузить профиль — если не найден, запускаем опрос прямо в чате.
-     * 3. Загружаем историю сообщений из файла.
-     *
-     * @param user объект пользователя с именем
      */
     public void setUser(User user) {
         this.user = user;
+        this.bot = new HybridBot(); // Создаём бота здесь, когда user уже известен
 
-        // Сохраняем глобально — нужно для сохранения при закрытии в Main.stop()
+        // Сохраняем глобально
         CurrentUser.set(user);
 
         // Пробуем загрузить профиль пользователя
         UserProfile profile = ProfileManager.load(user.getName());
         if (profile == null) {
-            // Первый запуск — профиля нет, запускаем диалог прямо в чате
+            clearStats();
             askForProfile(user.getName());
         } else {
-            // Профиль найден — передаём в бот для персонализации системного промпта
+            // Загружаем статистику из файла
+            int[] stats = StatsManager.loadStats();
+            bot.setStats(stats[0], stats[1], stats[2]);
             bot.setUserProfile(profile);
         }
 
@@ -104,8 +109,22 @@ public class ChatController {
                 user.addMessage(message);
                 messageList.getItems().add(message);
             }
-            // Прокручиваем список к последнему сообщению
             messageList.scrollTo(messageList.getItems().size() - 1);
+        }
+    }
+
+    /**
+     * Сохраняет историю и статистику при закрытии окна.
+     */
+    public void saveAll() {
+        if (user != null && bot != null) {
+            HistoryManager.save(user);
+            StatsManager.saveStats(
+                    user.getName(),
+                    bot.getTotalMessages(),
+                    bot.getUserMessages(),
+                    bot.getBotMessages()
+            );
         }
     }
 
@@ -122,83 +141,47 @@ public class ChatController {
                 Message.Sender.BOT);
         messageList.getItems().add(msg);
         user.addMessage(msg);
+        bot.countBotMessage(); // Считаем сообщение бота
     }
 
-    // Обработка отправки сообщения
-
-    /**
-     * Обрабатывает нажатие кнопки «Отправить» (или Enter).
-     *
-     * Если идёт опрос профиля — перехватывает ввод и передаёт в {@link #handleProfileInput}.
-     * Иначе — добавляет сообщение в чат и запускает запрос к боту в отдельном потоке.
-     */
     @FXML
     private void onSendMessage() {
         String text = inputField.getText().trim();
-        if (text.isEmpty()) return;
+        if (text.isBlank()) return;
 
-        // Добавляем сообщение пользователя в чат и историю
+        // Сообщение пользователя
         Message userMessage = new Message(user.getName(), text, Message.Sender.USER);
         messageList.getItems().add(userMessage);
         user.addMessage(userMessage);
         inputField.clear();
+        bot.countUserMessage();
 
-        // Если идёт опрос профиля — перехватываем ввод, не отправляем боту
+        // Если идёт опрос профиля — не отправляем боту
         if (profileState != ProfileState.NONE) {
             handleProfileInput(text);
             return;
         }
 
-        // Учитываем сообщение пользователя в статистике
-        bot.countUserMessage();
-
-        // Показываем индикатор «Печатает...» пока бот думает
+        // Заглушка "Печатает..."
         Message typing = new Message("Бот", "Печатает...", Message.Sender.BOT);
         messageList.getItems().add(typing);
 
-        // Запрос к боту выполняется в daemon-потоке, чтобы не блокировать UI
-        getThread(text, typing).start();
-
-        inputField.requestFocus();
-    }
-
-    /**
-     * Создаёт поток для асинхронного получения ответа от бота.
-     * После получения ответа обновляет UI через Platform.runLater(),
-     * так как JavaFX не допускает изменение UI из не-главного потока.
-     *
-     * @param text   текст сообщения пользователя
-     * @param typing сообщение-заглушка «Печатает...», которое нужно удалить после ответа
-     * @return настроенный daemon-поток
-     */
-    private Thread getThread(String text, Message typing) {
-        Thread thread = new Thread(() -> {
-            // Получаем ответ от бота (может занять время при обращении к GigaChat)
+        new Thread(() -> {
             String response = bot.getResponse(text);
 
-            // Все изменения UI должны выполняться в потоке JavaFX
             javafx.application.Platform.runLater(() -> {
-                // Убираем заглушку «Печатает...»
                 messageList.getItems().remove(typing);
 
-                // Добавляем реальный ответ бота
                 Message botMessage = new Message("Бот", response, Message.Sender.BOT);
                 messageList.getItems().add(botMessage);
                 user.addMessage(botMessage);
 
-                // Учитываем ответ бота в статистике
-                bot.countBotMessage();
-
                 messageList.scrollTo(messageList.getItems().size() - 1);
             });
-        });
+        }).start();
 
-        // Daemon-поток завершается вместе с приложением, не блокируя выход
-        thread.setDaemon(true);
-        return thread;
+        bot.countBotMessage();
     }
-
-    // Опрос профиля пользователя в чате
 
     /**
      * Обрабатывает ввод пользователя во время опроса профиля.
@@ -209,37 +192,35 @@ public class ChatController {
      */
     private void handleProfileInput(String text) {
         if (profileState == ProfileState.WAITING_AGE) {
-            // Сохраняем возраст временно и переходим к следующему вопросу
             pendingAge = text;
             profileState = ProfileState.WAITING_CITY;
 
             Message msg = new Message("Бот", "Из какого ты города?", Message.Sender.BOT);
             messageList.getItems().add(msg);
             user.addMessage(msg);
+            bot.countBotMessage();
 
         } else if (profileState == ProfileState.WAITING_CITY) {
-            // Парсим возраст — если пользователь ввёл не число, используем 0
             int age = 0;
             try {
                 age = Integer.parseInt(pendingAge.trim());
             } catch (NumberFormatException ignored) {
             }
 
-            // Создаём профиль, сохраняем в файл и передаём боту
             UserProfile profile = new UserProfile(user.getName(), age, text);
             ProfileManager.save(profile);
             bot.setUserProfile(profile);
 
-            // Сбрасываем состояние опроса
             profileState = ProfileState.NONE;
             pendingAge = null;
 
-            // Подтверждаем сохранение пользователю
             Message msg = new Message("Бот",
                     "Запомнил! " + age + " лет, город — " + text + ".",
                     Message.Sender.BOT);
             messageList.getItems().add(msg);
             user.addMessage(msg);
+            bot.countBotMessage();
+
             messageList.scrollTo(messageList.getItems().size() - 1);
         }
     }
@@ -266,7 +247,7 @@ public class ChatController {
             // чтобы текст не выходил за пределы при изменении размера окна
             label.maxWidthProperty().bind(
                     listViewProperty()
-                            .flatMap(lv -> lv.widthProperty())
+                            .flatMap(Region::widthProperty)
                             .map(w -> w.doubleValue() - 40)
             );
 
@@ -318,12 +299,12 @@ public class ChatController {
 
             // Ширина контейнера тоже привязана к ширине списка
             container.maxWidthProperty().bind(
-                    listViewProperty()
-                            .flatMap(lv -> lv.widthProperty())
-                            .map(w -> w.doubleValue() - 20)
+                    listViewProperty()                              // Получаем свойство, содержащее ссылку на ListView
+                    .flatMap(Region::widthProperty)                 // Когда ListView появляется, берём его свойство ширины
+                    .map(w -> w.doubleValue() - 20)         // Вычитаем 20 пикселей (отступы) из ширины ListView
             );
 
-            setGraphic(container);
+            setGraphic(container); // включаем кастомное содержимое, описанное выше
 
             // Убираем стандартный фон ячейки ListView, чтобы не перекрывал пузыри
             setStyle("-fx-background-color: transparent;");
