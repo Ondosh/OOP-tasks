@@ -1,0 +1,88 @@
+```plantuml
+@startuml
+
+skinparam defaultFontName Arial
+skinparam classAttributeIconSize 0
+skinparam classFontStyle bold
+skinparam ArrowColor #555555
+skinparam ClassBorderColor #888888
+
+legend top left
+  <b>Шпаргалка по связям</b>
+  |= Обозначение   |= Тип            |= Значение                          |
+  | A </-- B       | Наследование    | B extends A                        |
+  | A </.. B       | Реализация      | B implements A                     |
+  | A *-- B        | Композиция      | B — часть A, без A не существует   |
+  | A o-- B        | Агрегация       | B — часть A, но живёт отдельно     |
+  | A --> B        | Ассоциация      | A хранит ссылку на B               |
+  | A ..> B        | Зависимость     | A использует B (временно)          |
+  | A +-- B        | Вложенность     | B объявлен внутри A                |
+endlegend
+
+package "bot" {
+    interface IBot
+    class GigaChatBot
+    class HybridBot
+    class SimpleBot
+
+    IBot <|.. GigaChatBot
+    IBot <|.. HybridBot
+    IBot <|.. SimpleBot
+
+    HybridBot *-- GigaChatBot : содержит
+    HybridBot *-- SimpleBot   : содержит
+}
+
+package "controller" {
+    class ChatController
+    class WelcomeController
+
+    WelcomeController ..> ChatController : создаёт и передаёт User
+}
+
+package "model" {
+    class User
+    class Message
+    class UserProfile
+    class CurrentUser
+
+    enum Sender {
+        USER
+        BOT
+    }
+
+    Message +-- Sender
+    User    *-- Message : содержит
+}
+
+package "util" {
+    class HistoryManager
+    class ProfileManager
+    class SceneSwitcher
+}
+
+class Main
+
+Main ..> SceneSwitcher     : использует
+Main ..> HistoryManager    : сохраняет при выходе
+Main ..> ProfileManager    : сохраняет при выходе
+Main ..> CurrentUser       : читает
+
+ChatController ..> IBot           : использует
+ChatController  --> User          : владеет
+ChatController ..> UserProfile    : передаёт в бот
+ChatController ..> CurrentUser    : регистрирует
+ChatController ..> HistoryManager : загружает историю
+ChatController ..> ProfileManager : загружает профиль
+
+WelcomeController ..> SceneSwitcher : переключает сцену
+
+GigaChatBot --> UserProfile : персонализирует промпт
+
+HistoryManager ..> User    : читает/пишет
+HistoryManager ..> Message : создаёт
+
+ProfileManager ..> UserProfile : читает/пишет
+
+@enduml
+```
