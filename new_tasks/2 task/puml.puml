@@ -59,6 +59,7 @@ package "util" {
     class HistoryManager
     class ProfileManager
     class SceneSwitcher
+    class StatsManager
 }
 
 class Main
@@ -84,5 +85,6 @@ HistoryManager ..> Message : создаёт
 
 ProfileManager ..> UserProfile : читает/пишет
 
+ChatController ..> StatsManager : загружает/сохраняет статистику
 @enduml
 ```
