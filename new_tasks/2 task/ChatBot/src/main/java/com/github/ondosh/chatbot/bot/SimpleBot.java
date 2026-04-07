@@ -129,6 +129,21 @@ public class SimpleBot implements IBot {
     private static final Pattern P_SUB  = Pattern.compile(
             "вычти\\s+(-?[\\d.,]+)\\s+из\\s+(-?[\\d.,]+)", Pattern.CASE_INSENSITIVE);
 
+    /** Сложение в виде выражения: «2+2». Группы 1 и 2 — операнды. */
+    private static final Pattern P_EXPR_ADD = Pattern.compile(
+            "(-?[\\d.,]+)\\s*\\+\\s*(-?[\\d.,]+)");
+
+    /** Вычитание в виде выражения: «2-2». Группы 1 и 2 — операнды. */
+    private static final Pattern P_EXPR_SUB = Pattern.compile(
+            "(-?[\\d.,]+)\\s*-\\s*(-?[\\d.,]+)");
+
+    /** Умножение в виде выражения: «2*2». Группы 1 и 2 — операнды. */
+    private static final Pattern P_EXPR_MUL = Pattern.compile(
+            "(-?[\\d.,]+)\\s*[*×]\\s*(-?[\\d.,]+)");
+
+    /** Деление в виде выражения: «2/2». Группы 1 и 2 — операнды. */
+    private static final Pattern P_EXPR_DIV = Pattern.compile(
+            "(-?[\\d.,]+)\\s*[/÷]\\s*(-?[\\d.,]+)");
     // ---------------------------------------------------------------
     // Публичный API
     // ---------------------------------------------------------------
@@ -174,7 +189,11 @@ public class SimpleBot implements IBot {
                 || P_MUL.matcher(lower).find()
                 || P_DIV.matcher(lower).find()
                 || P_ADD.matcher(lower).find()
-                || P_SUB.matcher(lower).find();
+                || P_SUB.matcher(lower).find()
+                || P_EXPR_ADD.matcher(input).find()
+                || P_EXPR_SUB.matcher(input).find()
+                || P_EXPR_MUL.matcher(input).find()
+                || P_EXPR_DIV.matcher(input).find();
     }
 
     /**
@@ -190,6 +209,22 @@ public class SimpleBot implements IBot {
         String lower = input.toLowerCase().trim();
 
         var m = P_MUL.matcher(lower);
+        var me = P_EXPR_ADD.matcher(input);
+
+        if (me.find())
+            return formatResult(parseNum(me.group(1)) + parseNum(me.group(2)));
+
+        if (me.usePattern(P_EXPR_SUB).reset(input).find())
+            return formatResult(parseNum(me.group(1)) - parseNum(me.group(2)));
+
+        if (me.usePattern(P_EXPR_MUL).reset(input).find())
+            return formatResult(parseNum(me.group(1)) * parseNum(me.group(2)));
+
+        if (me.usePattern(P_EXPR_DIV).reset(input).find()) {
+            double b = parseNum(me.group(2));
+            return b == 0 ? "На ноль делить нельзя!"
+                    : formatResult(parseNum(me.group(1)) / b);
+        }
 
         if (P_TIME.matcher(lower).find())
             return "Сейчас " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("HH:mm"));

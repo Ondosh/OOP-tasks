@@ -1,1 +1,1 @@
-moduleSearchIndex = [{"l":"com.github.ondosh.trianglegui"}];updateSearchResults();
+moduleSearchIndex = [{"l":"com.github.ondosh.chatbot"}];updateSearchResults();
