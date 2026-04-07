@@ -95,7 +95,7 @@ public class ChatController {
             askForProfile(user.getName());
         } else {
             // Профиль найден — передаём в бот для персонализации системного промпта
-            ((HybridBot) bot).setUserProfile(profile);
+            bot.setUserProfile(profile);
         }
 
         // Загружаем историю сообщений из файла
@@ -151,7 +151,7 @@ public class ChatController {
         }
 
         // Учитываем сообщение пользователя в статистике
-        ((HybridBot) bot).getParser().countUserMessage();
+        bot.countUserMessage();
 
         // Показываем индикатор «Печатает...» пока бот думает
         Message typing = new Message("Бот", "Печатает...", Message.Sender.BOT);
@@ -188,7 +188,7 @@ public class ChatController {
                 user.addMessage(botMessage);
 
                 // Учитываем ответ бота в статистике
-                ((HybridBot) bot).getParser().countBotMessage();
+                bot.countBotMessage();
 
                 messageList.scrollTo(messageList.getItems().size() - 1);
             });
@@ -229,7 +229,7 @@ public class ChatController {
             // Создаём профиль, сохраняем в файл и передаём боту
             UserProfile profile = new UserProfile(user.getName(), age, text);
             ProfileManager.save(profile);
-            ((HybridBot) bot).setUserProfile(profile);
+            bot.setUserProfile(profile);
 
             // Сбрасываем состояние опроса
             profileState = ProfileState.NONE;

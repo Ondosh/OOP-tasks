@@ -7,6 +7,10 @@ public class HybridBot implements IBot {
     private final GigaChatBot   gigaChatBot = new GigaChatBot();
     private final SimpleBot parser      = new SimpleBot();
 
+    public void countUserMessage() {
+        parser.countUserMessage();
+    }
+
     @Override
     public String getResponse(String input) {
         // 1. Команды (время, дата, математика, статистика)
