@@ -1,6 +1,5 @@
 package com.github.ondosh.chatbot.controller;
 
-import com.github.ondosh.chatbot.bot.IBot;
 import com.github.ondosh.chatbot.bot.HybridBot;
 import com.github.ondosh.chatbot.model.CurrentUser;
 import com.github.ondosh.chatbot.model.Message;
@@ -40,7 +39,7 @@ public class ChatController {
      * но в некоторых местах приводится к HybridBot для доступа к специфичным методам
      * (getParser, setUserProfile).
      */
-    private final IBot bot = new HybridBot();
+    private final HybridBot bot = new HybridBot();
 
     // Состояние опроса профиля
 
@@ -66,7 +65,9 @@ public class ChatController {
      */
     @FXML
     public void initialize() {
+        // Просим после выполнения всех задач сделать фокус на поле ввода
         Platform.runLater(() -> inputField.requestFocus());
+        // Создаём "фабрику полей", нужно для кастомных "полей" сообщений
         messageList.setCellFactory(list -> new MessageCell());
         messageList.setFocusTraversable(false);
     }
