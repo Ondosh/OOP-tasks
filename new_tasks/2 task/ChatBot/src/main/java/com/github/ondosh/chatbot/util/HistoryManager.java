@@ -27,7 +27,7 @@ public class HistoryManager {
             for (Message message : user.getHistory()) {
                 // Заменяем переносы строк на HTML-подобные маркеры
                 String escapedText = message.getText()
-                        .replace("\n", "&#10;")
+                            .replace("\n", "&#10;")
                         .replace("\r", "&#13;");
 
                 writer.write(

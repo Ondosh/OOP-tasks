@@ -68,7 +68,7 @@ Main ..> HistoryManager    : сохраняет при выходе
 Main ..> ProfileManager    : сохраняет при выходе
 Main ..> CurrentUser       : читает
 
-ChatController ..> IBot           : использует
+ChatController ..o IBot           : использует
 ChatController  --> User          : владеет
 ChatController ..> UserProfile    : передаёт в бот
 ChatController ..> CurrentUser    : регистрирует

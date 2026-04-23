@@ -11,7 +11,7 @@ public interface IBot {
     default String getBotName() {
         return "Bot";
     }
-
+    // default - делает реализацию "по умолчанию", тем самым добавляя её прямо в интерфейс
     /** Проверяет доступность бота. */
     default boolean isAvailable() {
         return true;

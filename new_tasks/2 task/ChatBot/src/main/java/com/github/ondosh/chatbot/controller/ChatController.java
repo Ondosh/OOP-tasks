@@ -166,6 +166,7 @@ public class ChatController {
         Message typing = new Message("Бот", "Печатает...", Message.Sender.BOT);
         messageList.getItems().add(typing);
 
+        // Объявляем отдельный поток, чтобы пока мы ждём ответа от бота, у нас не висла программа
         new Thread(() -> {
             String response = bot.getResponse(text);
 

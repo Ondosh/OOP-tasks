@@ -174,7 +174,7 @@ public class SimpleBot implements IBot {
             if (m.find()) {
                 String leftover = (lower.substring(0, m.start()) + lower.substring(m.end()))
                         .replaceAll("[\\s,!?.]+", "");
-                if (leftover.length() <= 8) {
+                if (leftover.length() <= 5) {
                     return entry.getValue();
                 }
             }

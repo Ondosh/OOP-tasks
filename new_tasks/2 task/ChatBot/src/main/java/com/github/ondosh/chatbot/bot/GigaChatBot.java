@@ -45,6 +45,12 @@ public class GigaChatBot implements IBot {
     private static final String API_URL = "https://gigachat.devices.sberbank.ru/api/v1/chat/completions";
 
     /**
+     * Значения параметров модели по умолчанию
+     */
+    private static double temperature = 0.7;
+    private static int max_tokens = 1000;
+
+    /**
      * HTTP-клиент с отключённой проверкой SSL-сертификата.
      */
     private final HttpClient client;
@@ -112,6 +118,11 @@ public class GigaChatBot implements IBot {
         }
     }
 
+    @Override
+    public String getResponse(String input) {
+        // Используем значения по умолчанию из полей класса
+        return getResponse(input, temperature, max_tokens);
+    }
     /**
      * Основной метод получения ответа от GigaChat.
      * Перед запросом проверяет актуальность токена и при необходимости обновляет его.
@@ -119,11 +130,12 @@ public class GigaChatBot implements IBot {
      * @param input текст сообщения от пользователя
      * @return текстовый ответ модели или сообщение об ошибке
      */
-    @Override
-    public String getResponse(String input) {
+    public String getResponse(String input, double temperature, int max_tokens) {
         try {
             // Убеждаемся, что токен существует и не устарел
             ensureValidToken();
+            double temp = temperature;
+            int m_tokens = max_tokens;
 
             // Формируем тело запроса в формате JSON.
             // Системное сообщение запрещает модели использовать Markdown-разметку,
@@ -141,10 +153,10 @@ public class GigaChatBot implements IBot {
                                 "content": "%s"
                             }
                         ],
-                        "temperature": 0.7,
-                        "max_tokens": 1000
+                        "temperature": %f,
+                        "max_tokens": %d
                     }
-                    """, escapeJson(buildSystemPrompt()), escapeJson(input));
+                    """, escapeJson(buildSystemPrompt()), escapeJson(input), temp, m_tokens); //сделать возможность изменения
 
             // Строим HTTP-запрос с токеном в заголовке Bearer
             HttpRequest request = HttpRequest.newBuilder()
@@ -345,4 +357,30 @@ public class GigaChatBot implements IBot {
             return false;
         }
     }
+
+    public static double getTemperature() {
+        return temperature;
+    }
+
+    public void setTemperature(double temp) {
+        if ((0.0 <= temp) && (temp <= 2.0)) {
+            temperature = temp;
+        } else {
+            throw new IllegalArgumentException("Температура должна быть в диапазоне от 0.0 до 2.0");
+        }
+    }
+
+    public void setMax_tokens(int m_tokens) {
+        if ((10 <= m_tokens) && (m_tokens <= 6000)) {
+            max_tokens = m_tokens;
+        } else {
+            throw new IllegalArgumentException("Максимальное количество токенов должно быть в диапазоне от 10 до 6000");
+        }
+
+    }
+
+    public static int getMax_tokens() {
+        return max_tokens;
+    }
+
 }
