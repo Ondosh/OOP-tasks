@@ -1,0 +1,93 @@
+```plantuml
+@startuml
+
+legend top left
+  <b>Шпаргалка по связям</b>
+  |= Обозначение   |= Тип            |= Значение                          |
+  | A </-- B       | Наследование    | B extends A                        |
+  | A </.. B       | Реализация      | B implements A                     |
+  | A *-- B        | Композиция      | B — часть A, без A не существует   |
+  | A o-- B        | Агрегация       | B — часть A, но живёт отдельно     |
+  | A --> B        | Ассоциация      | A хранит ссылку на B               |
+  | A ..> B        | Зависимость     | A использует B (временно)          |
+  | A +-- B        | Вложенность     | B объявлен внутри A                |
+endlegend
+
+package "bot" {
+    interface IBot
+    class GigaChatBot
+    class HybridBot
+    class SimpleBot
+
+    IBot <|.. GigaChatBot
+    IBot <|.. HybridBot
+    IBot <|.. SimpleBot
+
+    HybridBot *-- GigaChatBot : содержит
+    HybridBot *-- SimpleBot   : содержит
+}
+
+package "controller" {
+    class ChatController
+    class WelcomeController
+
+    WelcomeController ..> ChatController : передаёт User
+
+    enum ProfileState {
+    NONE
+    WAITING_AGE
+    WAITING_CITY
+    }
+
+    ChatController +-- ProfileState
+}
+
+package "model" {
+    class User
+    class Message
+    class UserProfile
+    class CurrentUser
+
+    enum Sender {
+        USER
+        BOT
+    }
+
+    Message +-- Sender
+    User    o-- Message : содержит
+}
+
+package "util" {
+    class HistoryManager
+    class ProfileManager
+    class SceneSwitcher
+    class StatsManager
+}
+
+WelcomeController ..> User : создаёт и передаёт
+WelcomeController ..> SceneSwitcher : вызывает статический метод
+
+GigaChatBot o-- UserProfile : объявлен в поле и использован в методе
+
+HistoryManager ..> User    : читает/пишет
+HistoryManager ..> Message : создаёт
+
+ChatController ..> Message
+ChatController o-- User
+ChatController o-- HybridBot
+ChatController ..> CurrentUser
+ChatController ..> UserProfile
+ChatController ..> HistoryManager
+ChatController ..> StatsManager
+ChatController ..> ProfileManager
+
+class Application
+class Main
+
+Application <|.. Main : наследует
+Main ..> CurrentUser
+Main ..> SceneSwitcher
+Main ..> HistoryManager
+Main ..> ProfileManager
+@enduml
+```
