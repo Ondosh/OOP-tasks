@@ -24,6 +24,9 @@ public class GigaChatBot implements IBot {
 
     private static final String AUTHORIZATION_KEY = readKeyFromFile();
 
+    /**
+     * Считывает ключ для использования нейросети
+     */
     private static String readKeyFromFile() {
         try {
             // Ищем файл рядом с jar или в папке проекта
@@ -47,8 +50,8 @@ public class GigaChatBot implements IBot {
     /**
      * Значения параметров модели по умолчанию
      */
-    private static double temperature = 0.7;
-    private static int max_tokens = 1000;
+    private double temperature = 0.7;
+    private int max_tokens = 1000;
 
     /**
      * HTTP-клиент с отключённой проверкой SSL-сертификата.
@@ -79,9 +82,28 @@ public class GigaChatBot implements IBot {
         this.userProfile = profile;
     }
 
+    @Override
+    public void setStats(int stat, int stat1, int stat2) {
+
+    }
+
+    @Override
+    public int getTotalMessages() {
+        return 0;
+    }
+
+    @Override
+    public int getUserMessages() {
+        return 0;
+    }
+
+    @Override
+    public int getBotMessages() {
+        return 0;
+    }
+
     /**
      * Создаёт {@link HttpClient}, который доверяет любым SSL-сертификатам.
-     * <b>Внимание:</b> не использовать в продакшене — небезопасно.
      *
      * @return настроенный HTTP-клиент
      */
@@ -118,10 +140,14 @@ public class GigaChatBot implements IBot {
         }
     }
 
+    /**
+     * Запасной метод получения ответа, который берёт значения по умолчанию
+     * и вызывает основной (с 3 аргументами).
+     */
     @Override
     public String getResponse(String input) {
         // Используем значения по умолчанию из полей класса
-        return getResponse(input, temperature, max_tokens);
+        return getResponse(input, this.temperature, this.max_tokens);
     }
     /**
      * Основной метод получения ответа от GigaChat.
@@ -140,7 +166,7 @@ public class GigaChatBot implements IBot {
             // Формируем тело запроса в формате JSON.
             // Системное сообщение запрещает модели использовать Markdown-разметку,
             // чтобы ответ отображался как чистый текст в чате.
-            String requestBody = String.format("""
+            String requestBody = String.format(java.util.Locale.US, """
                     {
                         "model": "GigaChat",
                         "messages": [
@@ -156,7 +182,9 @@ public class GigaChatBot implements IBot {
                         "temperature": %f,
                         "max_tokens": %d
                     }
-                    """, escapeJson(buildSystemPrompt()), escapeJson(input), temp, m_tokens); //сделать возможность изменения
+                    """, escapeJson(buildSystemPrompt()),
+                    escapeJson(input),
+                    temp, m_tokens); //сделать возможность изменения
 
             // Строим HTTP-запрос с токеном в заголовке Bearer
             HttpRequest request = HttpRequest.newBuilder()
@@ -167,13 +195,14 @@ public class GigaChatBot implements IBot {
                     .POST(HttpRequest.BodyPublishers.ofString(requestBody))
                     .build();
 
+            // Отправляем HTTP-запрос и получаем ответ от сервера.
             HttpResponse<String> response = client.send(
                     request,
-                    HttpResponse.BodyHandlers.ofString()
+                    HttpResponse.BodyHandlers.ofString() // превращает тело ответа в строку
             );
 
             if (response.statusCode() == 200) {
-                // Успешный ответ — парсим и возвращаем текст
+                // ответ получен
                 return parseResponse(response.body());
             } else {
                 return "Ошибка API: " + response.body();
@@ -310,13 +339,14 @@ public class GigaChatBot implements IBot {
      * @return строка с реальными символами
      */
     private String decodeJsonString(String text) {
-        return text.replace("\\n", "\n")
-                .replace("\\r", "\r")
-                .replace("\\t", "\t")
-                .replace("\\\"", "\"")
-                .replace("\\\\", "\\");
+        return text.replace("\\\\", "\\")    // Обратный слеш (должен быть первым!)
+                .replace("\\\"", "\"")    // Двойная кавычка
+                .replace("\\n", "\n")     // Перевод строки
+                .replace("\\r", "\r")     // Возврат каретки
+                .replace("\\t", "\t")     // Табуляция
+                .replace("\\b", "\b")     // Backspace
+                .replace("\\f", "\f");    // Form feed
     }
-
     /**
      * Экранирует специальные символы в строке для безопасной вставки в JSON.
      * Предотвращает инъекции и синтаксические ошибки при формировании тела запроса.
@@ -326,13 +356,20 @@ public class GigaChatBot implements IBot {
      */
     private String escapeJson(String text) {
         if (text == null) return "";
-        return text.replace("\\", "\\\\")
-                .replace("\"", "\\\"")
-                .replace("\n", "\\n")
-                .replace("\r", "\\r")
-                .replace("\t", "\\t");
+        return text.replace("\\", "\\\\")   // Обратный слеш
+                .replace("\"", "\\\"")   // Двойная кавычка
+                .replace("\n", "\\n")    // Перенос строки
+                .replace("\r", "\\r")    // Возврат каретки
+                .replace("\t", "\\t")    // Табуляция
+                .replace("\b", "\\b")    // Backspace
+                .replace("\f", "\\f");   // Form feed
     }
 
+    /**
+     * Делаем промпт для нейронки.
+     * Говорим ей в каком именно формате отвечать
+     * (нам важно чтобы нейронка не отвечала в формате md)
+     */
     private String buildSystemPrompt() {
         String base = "Отвечай только обычным текстом. НЕ используй Markdown, HTML или любое другое форматирование. " +
                 "Не используй символы *, #, `, [], (), >. Отвечай простыми предложениями без специального форматирования.";
@@ -343,11 +380,19 @@ public class GigaChatBot implements IBot {
                 ", ему " + userProfile.getAge() + " лет, он из города " + userProfile.getCity() + ".";
     }
 
+    /**
+     * Получаем имя бота.
+     * @return "GigaChat"
+     */
     @Override
     public String getBotName() {
         return "GigaChat";
     }
 
+    /**
+     * Проверка на то, доступен ли бот (проверяет актуальность токена)
+     * @return boolean
+     */
     @Override
     public boolean isAvailable() {
         try {
@@ -358,13 +403,13 @@ public class GigaChatBot implements IBot {
         }
     }
 
-    public static double getTemperature() {
-        return temperature;
+    public double getTemperature() {
+        return this.temperature;
     }
 
     public void setTemperature(double temp) {
         if ((0.0 <= temp) && (temp <= 2.0)) {
-            temperature = temp;
+            this.temperature = temp;
         } else {
             throw new IllegalArgumentException("Температура должна быть в диапазоне от 0.0 до 2.0");
         }
@@ -372,15 +417,15 @@ public class GigaChatBot implements IBot {
 
     public void setMax_tokens(int m_tokens) {
         if ((10 <= m_tokens) && (m_tokens <= 6000)) {
-            max_tokens = m_tokens;
+            this.max_tokens = m_tokens;
         } else {
             throw new IllegalArgumentException("Максимальное количество токенов должно быть в диапазоне от 10 до 6000");
         }
 
     }
 
-    public static int getMax_tokens() {
-        return max_tokens;
+    public int getMax_tokens() {
+        return this.max_tokens;
     }
 
 }

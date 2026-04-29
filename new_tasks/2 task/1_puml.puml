@@ -69,17 +69,18 @@ WelcomeController ..> SceneSwitcher : вызывает статический м
 
 GigaChatBot o-- UserProfile : объявлен в поле и использован в методе
 
-HistoryManager ..> ser    : читает/пишет
+HistoryManager ..> User    : читает/пишет
 HistoryManager ..> Message : создаёт
 
 ChatController ..> Message
 ChatController o-- User
-ChatController o-- HybridBot
+ChatController ..> HybridBot
 ChatController ..> CurrentUser
 ChatController ..> UserProfile
 ChatController ..> HistoryManager
 ChatController ..> StatsManager
 ChatController ..> ProfileManager
+ChatController *-- IBot
 
 class Application
 class Main

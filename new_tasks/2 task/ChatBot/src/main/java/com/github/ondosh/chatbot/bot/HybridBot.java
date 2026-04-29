@@ -32,6 +32,14 @@ public class HybridBot implements IBot {
         parser.setStats(total, user, bot);
     }
 
+    /**
+     * Проверяем какой именно инпут нам прилетел.
+     * 1. Проверка на команды из SimpleBot.
+     * 2. Проверка на заготовленные фразы из SimpleBot.
+     * 3. Отправляем в нейросеть если не совпало.
+     * @param input
+     * @return
+     */
     @Override
     public String getResponse(String input) {
         // 1. Команды (время, дата, математика, статистика)
@@ -58,6 +66,10 @@ public class HybridBot implements IBot {
         return "HybridBot";
     }
 
+    /**
+     * Проверка доступен ли GigaChat
+     * @return boolean
+     */
     @Override
     public boolean isAvailable() {
         return gigaChatBot.isAvailable();

@@ -1,6 +1,7 @@
 package com.github.ondosh.chatbot.controller;
 
 import com.github.ondosh.chatbot.bot.HybridBot;
+import com.github.ondosh.chatbot.bot.IBot;
 import com.github.ondosh.chatbot.model.CurrentUser;
 import com.github.ondosh.chatbot.model.Message;
 import com.github.ondosh.chatbot.model.User;
@@ -39,7 +40,7 @@ public class ChatController {
     /**
      * Экземпляр бота.
      */
-    private HybridBot bot;
+    private IBot bot;
 
     // Состояние опроса профиля
 

@@ -15,10 +15,18 @@ public class User {
     /** История сообщений в оперативной памяти. */
     private final List<Message> history = new ArrayList<>();
 
+    /**
+     * конструктор
+     * @param name - имя пользователя
+     */
     public User(String name) {
         this.name = name;
     }
 
+    /**
+     * Геттер имени пользователя
+     * @return name
+     */
     public String getName() { return name; }
 
     /** Добавляет сообщение в историю. */
