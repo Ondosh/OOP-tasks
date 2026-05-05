@@ -43,9 +43,16 @@ public class Message {
         this.time   = LocalTime.now();
     }
 
+    /** Возвращает автора сообщения. */
     public String getAuthor()  { return author; }
+
+    /** Возвращает текст сообщения. */
     public String getText()    { return text; }
+
+    /** Возвращает отправителя сообщения (USER или BOT). */
     public Sender getSender()  { return sender; }
+
+    /** Возвращает время отправки сообщения. */
     public LocalTime getTime()   { return time;   }
 
     /**

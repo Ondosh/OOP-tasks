@@ -78,6 +78,11 @@ public class GigaChatBot implements IBot {
 
     private UserProfile userProfile = null;
 
+    /**
+     * Выбираем профиль пользователя для дальнейшего взаимодействия
+     * с информацией, которая в нём находится.
+     * @param profile - профиль пользователя
+     */
     public void setUserProfile(UserProfile profile) {
         this.userProfile = profile;
     }

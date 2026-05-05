@@ -41,6 +41,7 @@ public class Main extends Application {
      */
     @Override
     public void stop() {
+        // При остановке сохраняем информацию и историю.
         HistoryManager.save(CurrentUser.get());
         ProfileManager.save(CurrentUser.getProfile());
     }

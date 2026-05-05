@@ -168,13 +168,19 @@ public class SimpleBot implements IBot {
      * @return текст ответа если фраза распознана, иначе {@code null}
      */
     public String tryPhrase(String input) {
+        // Предположительную команду делаем нижним регистром
         String lower = input.toLowerCase().trim();
+
+        // Перебор всех шаблонов фраз
         for (Map.Entry<Pattern, String> entry : PHRASE_PATTERNS.entrySet()) {
+            // Ищем совпадение по нижнему регистру
             var m = entry.getKey().matcher(lower);
             if (m.find()) {
+                // текст не входящий в команду
                 String leftover = (lower.substring(0, m.start()) + lower.substring(m.end()))
                         .replaceAll("[\\s,!?.]+", "");
                 if (leftover.length() <= 5) {
+                    // если этого текста меньше чем 6 символов, то возвращаем ответ
                     return entry.getValue();
                 }
             }
@@ -301,10 +307,11 @@ public class SimpleBot implements IBot {
      */
     @Override
     public String getResponse(String input) {
+        // Проверка на команду
         if (isCommand(input)) {
             return executeCommand(input);
         }
-
+        // Проверка на заготовленную фразу
         String phrase = tryPhrase(input);
         if (phrase != null) {
             return phrase;

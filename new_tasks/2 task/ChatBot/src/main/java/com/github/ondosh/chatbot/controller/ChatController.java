@@ -99,17 +99,23 @@ public class ChatController {
         } else {
             // Загружаем статистику из файла
             int[] stats = StatsManager.loadStats();
+            // Статистика сообщений
             bot.setStats(stats[0], stats[1], stats[2]);
+            // Профиль пользователя с информацией которую он о себе дал
             bot.setUserProfile(profile);
         }
 
         // Загружаем историю сообщений из файла
         List<Message> history = HistoryManager.load(user.getName());
         if (!history.isEmpty()) {
+            // Цикл загрузки  сообщений
             for (Message message : history) {
+                // Добавляется сообщение в историю
                 user.addMessage(message);
+                // Добавляется в список сообщений
                 messageList.getItems().add(message);
             }
+            // Автоматический скролл к последнему сообщению
             messageList.scrollTo(messageList.getItems().size() - 1);
         }
     }
@@ -136,10 +142,12 @@ public class ChatController {
      * @param name имя пользователя для персонализации приветствия
      */
     private void askForProfile(String name) {
+        // Делаем статус профилю - ожидание возраста
         profileState = ProfileState.WAITING_AGE;
         Message msg = new Message("Бот",
                 "Привет, " + name + "! Давай познакомимся. Сколько тебе лет?",
                 Message.Sender.BOT);
+        // Добавляем скриптовое сообщение в список сообщений
         messageList.getItems().add(msg);
         user.addMessage(msg);
         bot.countBotMessage(); // Считаем сообщение бота
@@ -147,17 +155,20 @@ public class ChatController {
 
     @FXML
     private void onSendMessage() {
+        // Очищаем от лишних пробелов и запоминаем сообщение
         String text = inputField.getText().trim();
-        if (text.isBlank()) return;
+        if (text.isBlank()) return; // если сообщение пустое ничего не делаем
 
         // Сообщение пользователя
         Message userMessage = new Message(user.getName(), text, Message.Sender.USER);
+
+        // Добавляем в список, считаем сообщение, очищаем поле ввода для следующего
         messageList.getItems().add(userMessage);
         user.addMessage(userMessage);
         inputField.clear();
         bot.countUserMessage();
 
-        // Если идёт опрос профиля — не отправляем боту
+        // Если идёт опрос профиля — не отправляем боту сообщение
         if (profileState != ProfileState.NONE) {
             handleProfileInput(text);
             return;
@@ -169,8 +180,9 @@ public class ChatController {
 
         // Объявляем отдельный поток, чтобы пока мы ждём ответа от бота, у нас не висла программа
         new Thread(() -> {
+            // Ждём ответа от бота на сообщение пользователя
             String response = bot.getResponse(text);
-
+            // После этого удаляем заглушку, добавляем ответ бота
             javafx.application.Platform.runLater(() -> {
                 messageList.getItems().remove(typing);
 
@@ -181,7 +193,7 @@ public class ChatController {
                 messageList.scrollTo(messageList.getItems().size() - 1);
             });
         }).start();
-
+        // Считаем ответ бота
         bot.countBotMessage();
     }
 
@@ -193,8 +205,9 @@ public class ChatController {
      * @param text текст, введённый пользователем
      */
     private void handleProfileInput(String text) {
+        // Если ответ на возраст был получен, то задаём следующий - про город.
         if (profileState == ProfileState.WAITING_AGE) {
-            pendingAge = text;
+            pendingAge = text.trim();
             profileState = ProfileState.WAITING_CITY;
 
             Message msg = new Message("Бот", "Из какого ты города?", Message.Sender.BOT);
@@ -208,14 +221,18 @@ public class ChatController {
                 age = Integer.parseInt(pendingAge.trim());
             } catch (NumberFormatException ignored) {
             }
+            // Вписываем 0, если был введён неверный возраст
 
+            // Создаём новый профиль на основе данной нам информации
             UserProfile profile = new UserProfile(user.getName(), age, text);
             ProfileManager.save(profile);
             bot.setUserProfile(profile);
 
+            // Обнуляем переменные, говорим, что вопросов больше нет и ответа мы не ждём
             profileState = ProfileState.NONE;
             pendingAge = null;
 
+            // Даём контрольный ответ
             Message msg = new Message("Бот",
                     "Запомнил! " + age + " лет, город — " + text + ".",
                     Message.Sender.BOT);
@@ -267,6 +284,7 @@ public class ChatController {
          */
         @Override
         protected void updateItem(Message message, boolean empty) {
+            // Выполняем метод родительского класса через super
             super.updateItem(message, empty);
 
             // Пустые ячейки не отображаем
