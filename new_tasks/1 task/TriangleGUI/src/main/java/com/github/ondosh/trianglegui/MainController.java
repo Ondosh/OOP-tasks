@@ -4,16 +4,39 @@ import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import com.github.ondosh.Triangle;
 
+/**
+ * Контроллер главного окна приложения.
+ * Обрабатывает ввод пользователя, управляет объектом {@link Triangle}
+ * и обновляет отображение результатов.
+ */
 public class MainController {
-    @FXML private TextField side1Field;
-    @FXML private TextField side2Field;
-    @FXML private TextField side3Field;
-    @FXML private Label perimeterLabel;
-    @FXML private Label areaLabel;
-    @FXML private Label errorLabel; // Label для ошибок
 
+    /** Поле ввода первой стороны треугольника. */
+    @FXML private TextField side1Field;
+
+    /** Поле ввода второй стороны треугольника. */
+    @FXML private TextField side2Field;
+
+    /** Поле ввода третьей стороны треугольника. */
+    @FXML private TextField side3Field;
+
+    /** Метка для отображения периметра. */
+    @FXML private Label perimeterLabel;
+
+    /** Метка для отображения площади. */
+    @FXML private Label areaLabel;
+
+    /** Метка для отображения сообщений об ошибках. */
+    @FXML private Label errorLabel;
+
+    /** Объект треугольника, над которым выполняются вычисления. */
     private Triangle triangle;
 
+    /**
+     * Вызывается автоматически после загрузки FXML-разметки.
+     * Создаёт треугольник со сторонами по умолчанию (3, 4, 5),
+     * заполняет поля ввода и выводит начальные результаты.
+     */
     @FXML
     public void initialize() {
         triangle = new Triangle(3, 4, 5);
@@ -24,6 +47,13 @@ public class MainController {
         clearError();
     }
 
+    /**
+     * Считывает стороны из полей ввода, пересчитывает параметры треугольника
+     * и обновляет метки результатов.
+     * <p>
+     * Вызывается при нажатии кнопки «Вычислить».
+     * При некорректном вводе выводит сообщение об ошибке.
+     */
     @FXML
     private void calculateTriangle() {
         try {
@@ -36,29 +66,45 @@ public class MainController {
             clearError();
 
         } catch (NumberFormatException e) {
-            // Здесь NumberFormatException - тип исключения, а е - просто имя переменной
-            // через которую получаем доступ к объекту ошибки.
+            // Пользователь ввёл нечисловое значение — сообщаем об этом
             showError("Ошибка: введите числа");
         } catch (IllegalArgumentException e) {
+            // Triangle выбросил исключение, если стороны не образуют треугольник
             showError("Ошибка: " + e.getMessage());
-            // Здесь е.getMessage применяется для того, чтобы узнать что именно за ошибку мы поймали.
         }
     }
 
+    /**
+     * Обновляет метки периметра и площади значениями из текущего объекта треугольника.
+     * Числа форматируются с двумя знаками после запятой.
+     */
     private void updateDisplay() {
         perimeterLabel.setText(String.format("%.2f", triangle.getPerimeter()));
         areaLabel.setText(String.format("%.2f", triangle.getArea()));
     }
 
+    /**
+     * Показывает сообщение об ошибке в соответствующей метке.
+     *
+     * @param message текст ошибки для отображения пользователю
+     */
     private void showError(String message) {
         errorLabel.setText(message);
         errorLabel.setVisible(true);
     }
 
+    /**
+     * Скрывает метку с сообщением об ошибке.
+     */
     private void clearError() {
         errorLabel.setVisible(false);
     }
 
+    /**
+     * Очищает поля ввода, сбрасывает метки результатов и скрывает ошибку.
+     * <p>
+     * Вызывается при нажатии кнопки «Очистить».
+     */
     @FXML
     private void clearFields() {
         side1Field.clear();
@@ -68,5 +114,4 @@ public class MainController {
         areaLabel.setText("");
         clearError();
     }
-
 }
