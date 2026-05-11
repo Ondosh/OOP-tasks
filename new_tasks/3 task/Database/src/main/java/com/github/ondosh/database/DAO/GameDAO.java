@@ -2,14 +2,10 @@ package com.github.ondosh.database.DAO;
 
 import com.github.ondosh.database.model.Game;
 import com.github.ondosh.database.model.DatabaseManager;
-import javafx.scene.chart.PieChart;
 
 import java.sql.*;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
-
-import static com.github.ondosh.database.model.DatabaseManager.connection;
 
 public class GameDAO implements DAO {
     @Override
@@ -102,6 +98,44 @@ public class GameDAO implements DAO {
         } catch (SQLException e) {
             e.printStackTrace();
         }
+    }
+
+    /**
+     * Можно сортировать по title, genre, price, rating
+     */
+    @Override
+    public List<Game> getSortedBy(String field) {
+        // Белый список допустимых полей — защита от SQL инъекций
+        // нельзя использовать PreparedStatement для названия колонки
+        List<String> allowedFields = List.of("title", "genre", "price", "rating");
+
+        if (!allowedFields.contains(field)) {
+            throw new IllegalArgumentException("Недопустимое поле сортировки: " + field);
+        }
+
+        String sql = "SELECT * FROM games ORDER BY " + field;
+        List<Game> games = new ArrayList<>();
+
+        try (Connection conn = DatabaseManager.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+            ResultSet rs = pstmt.executeQuery();
+
+            while (rs.next()) {
+                games.add(new Game(
+                        rs.getInt("id"),
+                        rs.getString("title"),
+                        rs.getString("genre"),
+                        rs.getFloat("price"),
+                        rs.getFloat("rating")
+                ));
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return games;
     }
 
     @Override
