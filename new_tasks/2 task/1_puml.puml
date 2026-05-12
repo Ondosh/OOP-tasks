@@ -1,4 +1,3 @@
-```plantuml
 @startuml
 
 legend top left
@@ -32,14 +31,6 @@ package "controller" {
     class WelcomeController
 
     WelcomeController ..> ChatController : передаёт User
-
-    enum ProfileState {
-    NONE
-    WAITING_AGE
-    WAITING_CITY
-    }
-
-    ChatController +-- ProfileState
 }
 
 package "model" {
@@ -47,6 +38,7 @@ package "model" {
     class Message
     class UserProfile
     class CurrentUser
+    class ProfileWizard
 
     enum Sender {
         USER
@@ -54,7 +46,8 @@ package "model" {
     }
 
     Message +-- Sender
-    User    o-- Message : содержит
+    User    o-- Message  : содержит
+    ProfileWizard ..> UserProfile : создаёт
 }
 
 package "util" {
@@ -81,6 +74,7 @@ ChatController ..> HistoryManager
 ChatController ..> StatsManager
 ChatController ..> ProfileManager
 ChatController *-- IBot
+ChatController o-- ProfileWizard : мастер сбора профиля
 
 class Application
 class Main
@@ -91,4 +85,3 @@ Main ..> SceneSwitcher
 Main ..> HistoryManager
 Main ..> ProfileManager
 @enduml
-```
