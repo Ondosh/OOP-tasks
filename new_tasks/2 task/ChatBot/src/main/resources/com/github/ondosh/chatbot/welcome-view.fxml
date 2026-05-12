@@ -1,24 +1,52 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!-- Импорт необходимых классов JavaFX для использования в FXML -->
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.text.*?>
 
+<!--
+  Корневой контейнер VBox (вертикальная компоновка)
+  - fx:controller: связывает разметку с WelcomeController
+  - spacing="18": отступ 18px между элементами формы
+  - alignment="CENTER": центрирование всех дочерних элементов по горизонтали
+  - style: тёмный фон (#1e1e2e) и большие отступы (50px) для визуального баланса
+-->
 <VBox xmlns:fx="http://javafx.com/fxml"
       fx:controller="com.github.ondosh.chatbot.controller.WelcomeController"
       spacing="18" alignment="CENTER"
       style="-fx-background-color: #1e1e2e; -fx-padding: 50;">
 
+    <!--
+      Заголовок экрана приветствия
+      - text: основной заголовок (на русском)
+      - Стилизация: крупный жирный шрифт, акцентный фиолетовый цвет (#bd93f9)
+    -->
     <Label text="Добро пожаловать!"
            style="-fx-font-family: 'Segoe UI';
                   -fx-font-size: 24px;
                   -fx-font-weight: bold;
                   -fx-text-fill: #bd93f9;"/>
 
+    <!--
+      Подпись к полю ввода имени
+      - text: инструкция для пользователя
+      - Стилизация: обычный шрифт 14px, светлый текст для контраста на тёмном фоне
+    -->
     <Label text="Введите ваше имя:"
            style="-fx-font-family: 'Segoe UI';
                   -fx-font-size: 14px;
                   -fx-text-fill: #f8f8f2;"/>
 
+    <!--
+      TextField для ввода имени пользователя
+      - fx:id: идентификатор для получения значения в контроллере
+      - promptText: подсказка, отображаемая в пустом поле
+      - maxWidth="220": ограничение ширины для аккуратного вида формы
+      - onAction="#onStartChat": запуск чата при нажатии Enter
+      - Стилизация:
+        * граница акцентного цвета (#bd93f9) для визуального выделения
+        * скруглённые углы, согласованные с общей темой
+    -->
     <TextField fx:id="nameField"
                promptText="Ваше имя"
                maxWidth="220"
@@ -33,6 +61,16 @@
                       -fx-font-size: 13px;
                       -fx-padding: 8 12;"/>
 
+    <!--
+      Кнопка начала чата
+      - text: надпись на кнопке
+      - onAction="#onStartChat": обработчик нажатия (тот же, что у TextField)
+      - defaultButton="true": кнопка активируется по нажатию Enter в любом поле
+      - Стилизация:
+        * акцентный фиолетовый фон, тёмный текст для контраста
+        * увеличенные отступы (10 30) для более заметной кнопки
+        * cursor: hand — визуальная подсказка о кликабельности
+    -->
     <Button text="Начать чат" onAction="#onStartChat"
             defaultButton="true"
             style="-fx-background-color: #bd93f9;

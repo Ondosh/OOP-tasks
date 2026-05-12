@@ -1,13 +1,28 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!-- Импорт необходимых классов JavaFX для использования в FXML -->
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
-<?import javafx.scene.text.*?>
 
+<!--
+  Корневой контейнер VBox (вертикальная компоновка)
+  - fx:controller: связывает разметку с контроллером ChatController
+  - spacing="12": отступ 12px между дочерними элементами
+  - style: тёмная тема оформления с отступами по краям
+-->
+        <!-- Объявление пространства имён -->
 <VBox xmlns:fx="http://javafx.com/fxml"
       fx:controller="com.github.ondosh.chatbot.controller.ChatController"
       spacing="12"
       style="-fx-background-color: #1e1e2e; -fx-padding: 15;">
 
+    <!--
+      ListView для отображения истории сообщений чата
+      - fx:id: идентификатор для доступа из контроллера
+      - VBox.vgrow="ALWAYS": компонент растягивается на всё доступное пространство
+      - Стилизация: тёмный фон, скруглённые углы, шрифт Segoe UI, светлый текст
+      - -fx-control-inner-background: фон ячеек списка
+      - -fx-text-fill: цвет текста сообщений
+    -->
     <ListView fx:id="messageList" VBox.vgrow="ALWAYS"
               style="-fx-background-color: #2a2a3e;
                      -fx-border-color: #44475a;
@@ -18,7 +33,20 @@
                      -fx-control-inner-background: #2a2a3e;
                      -fx-text-fill: #f8f8f2;"/>
 
+    <!--
+      Горизонтальная панель (HBox) для поля ввода и кнопки отправки
+      - spacing="10": отступ между элементами ввода
+    -->
     <HBox spacing="10">
+
+        <!--
+          TextField для ввода пользовательского сообщения
+          - fx:id: доступ к полю из контроллера
+          - promptText: подсказка для пользователя (на русском)
+          - HBox.hgrow="ALWAYS": поле растягивается на всю ширину
+          - onAction="#onSendMessage": обработчик нажатия Enter
+          - Стилизация: согласована с общей тёмной темой
+        -->
         <TextField fx:id="inputField"
                    promptText="Введите сообщение..."
                    HBox.hgrow="ALWAYS"
@@ -32,6 +60,14 @@
                           -fx-font-family: 'Segoe UI';
                           -fx-font-size: 13px;
                           -fx-padding: 8 12;"/>
+
+        <!--
+          Кнопка отправки сообщения
+          - text: надпись на кнопке (на русском)
+          - onAction="#onSendMessage": тот же обработчик, что и у TextField
+          - Стилизация: акцентный фиолетовый цвет (#bd93f9 из палитры Dracula),
+            жирный шрифт, курсор-рука при наведении
+        -->
         <Button text="Отправить" onAction="#onSendMessage"
                 style="-fx-background-color: #bd93f9;
                        -fx-text-fill: #1e1e2e;
