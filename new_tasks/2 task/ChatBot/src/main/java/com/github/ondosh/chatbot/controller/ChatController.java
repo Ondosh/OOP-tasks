@@ -2,10 +2,7 @@ package com.github.ondosh.chatbot.controller;
 
 import com.github.ondosh.chatbot.bot.HybridBot;
 import com.github.ondosh.chatbot.bot.IBot;
-import com.github.ondosh.chatbot.model.CurrentUser;
-import com.github.ondosh.chatbot.model.Message;
-import com.github.ondosh.chatbot.model.User;
-import com.github.ondosh.chatbot.model.UserProfile;
+import com.github.ondosh.chatbot.model.*;
 import com.github.ondosh.chatbot.util.HistoryManager;
 import com.github.ondosh.chatbot.util.ProfileManager;
 import com.github.ondosh.chatbot.util.StatsManager;
@@ -44,16 +41,8 @@ public class ChatController {
 
     // Состояние опроса профиля
 
-    /**
-     * Перечисление состояний диалога при сборе профиля нового пользователя.
-     * NONE — обычный режим чата;
-     * WAITING_AGE — бот ждёт ввода возраста;
-     * WAITING_CITY — бот ждёт ввода города.
-     */
-    private enum ProfileState { NONE, WAITING_AGE, WAITING_CITY }
-
-    /** Текущее состояние опроса. По умолчанию — обычный режим. */
-    private ProfileState profileState = ProfileState.NONE;
+    /** Мастер сбора профиля нового пользователя, null если профиль уже есть. */
+    private ProfileWizard profileWizard;
 
     /** Временно хранит введённый возраст между двумя шагами опроса. */
     private String pendingAge = null;
@@ -95,7 +84,12 @@ public class ChatController {
         UserProfile profile = ProfileManager.load(user.getName());
         if (profile == null) {
             clearStats();
-            askForProfile(user.getName());
+            profileWizard = new ProfileWizard(user.getName());
+            String firstQuestion = profileWizard.start();
+            Message msg = new Message("Бот", firstQuestion, Message.Sender.BOT);
+            messageList.getItems().add(msg);
+            user.addMessage(msg);
+            bot.countBotMessage();
         } else {
             // Загружаем статистику из файла
             int[] stats = StatsManager.loadStats();
@@ -135,24 +129,6 @@ public class ChatController {
         }
     }
 
-    /**
-     * Запускает диалог сбора профиля нового пользователя.
-     * Переключает состояние в WAITING_AGE и отправляет первый вопрос в чат.
-     *
-     * @param name имя пользователя для персонализации приветствия
-     */
-    private void askForProfile(String name) {
-        // Делаем статус профилю - ожидание возраста
-        profileState = ProfileState.WAITING_AGE;
-        Message msg = new Message("Бот",
-                "Привет, " + name + "! Давай познакомимся. Сколько тебе лет?",
-                Message.Sender.BOT);
-        // Добавляем скриптовое сообщение в список сообщений
-        messageList.getItems().add(msg);
-        user.addMessage(msg);
-        bot.countBotMessage(); // Считаем сообщение бота
-    }
-
     @FXML
     private void onSendMessage() {
         // Очищаем от лишних пробелов и запоминаем сообщение
@@ -169,8 +145,17 @@ public class ChatController {
         bot.countUserMessage();
 
         // Если идёт опрос профиля — не отправляем боту сообщение
-        if (profileState != ProfileState.NONE) {
-            handleProfileInput(text);
+        // В onSendMessage вместо if (profileState != ProfileState.NONE):
+        if (profileWizard != null && profileWizard.isActive()) {
+            String reply = profileWizard.handle(text, p -> {
+                ProfileManager.save(p);
+                bot.setUserProfile(p);
+            });
+            Message msg = new Message("Бот", reply, Message.Sender.BOT);
+            messageList.getItems().add(msg);
+            user.addMessage(msg);
+            bot.countBotMessage();
+            messageList.scrollTo(messageList.getItems().size() - 1);
             return;
         }
 
@@ -179,7 +164,8 @@ public class ChatController {
         messageList.getItems().add(typing);
 
         // Объявляем отдельный поток, чтобы пока мы ждём ответа от бота, у нас не висла программа
-        new Thread(() -> {
+        // Код передаётся как функциональный интерфейс типа Runnable. Метод void run()
+        Thread thread = new Thread(() -> {
             // Ждём ответа от бота на сообщение пользователя
             String response = bot.getResponse(text);
             // После этого удаляем заглушку, добавляем ответ бота
@@ -191,57 +177,16 @@ public class ChatController {
                 user.addMessage(botMessage);
 
                 messageList.scrollTo(messageList.getItems().size() - 1);
+                // Считаем ответ бота После того, как он ответил
+                bot.countBotMessage();
             });
-        }).start();
-        // Считаем ответ бота
-        bot.countBotMessage();
-    }
+        });
+        // Daemon процесс это такой процесс, который убивается программой при закрытии контроллера
+        // Например, бот ждёт ответа от сети, но пользователь закрыл окно
+        // Тогда бот продолжит ждать ответ, а с setDaemon(true) этот процесс так же прервётся.
+        thread.setDaemon(true);
+        thread.start();
 
-    /**
-     * Обрабатывает ввод пользователя во время опроса профиля.
-     * Работает как простой конечный автомат с двумя состояниями:
-     * WAITING_AGE → WAITING_CITY → NONE (опрос завершён).
-     *
-     * @param text текст, введённый пользователем
-     */
-    private void handleProfileInput(String text) {
-        // Если ответ на возраст был получен, то задаём следующий - про город.
-        if (profileState == ProfileState.WAITING_AGE) {
-            pendingAge = text.trim();
-            profileState = ProfileState.WAITING_CITY;
-
-            Message msg = new Message("Бот", "Из какого ты города?", Message.Sender.BOT);
-            messageList.getItems().add(msg);
-            user.addMessage(msg);
-            bot.countBotMessage();
-
-        } else if (profileState == ProfileState.WAITING_CITY) {
-            int age = 0;
-            try {
-                age = Integer.parseInt(pendingAge.trim());
-            } catch (NumberFormatException ignored) {
-            }
-            // Вписываем 0, если был введён неверный возраст
-
-            // Создаём новый профиль на основе данной нам информации
-            UserProfile profile = new UserProfile(user.getName(), age, text);
-            ProfileManager.save(profile);
-            bot.setUserProfile(profile);
-
-            // Обнуляем переменные, говорим, что вопросов больше нет и ответа мы не ждём
-            profileState = ProfileState.NONE;
-            pendingAge = null;
-
-            // Даём контрольный ответ
-            Message msg = new Message("Бот",
-                    "Запомнил! " + age + " лет, город — " + text + ".",
-                    Message.Sender.BOT);
-            messageList.getItems().add(msg);
-            user.addMessage(msg);
-            bot.countBotMessage();
-
-            messageList.scrollTo(messageList.getItems().size() - 1);
-        }
     }
 
     // Кастомная ячейка списка сообщений
