@@ -37,6 +37,7 @@ public class ProfileWizard {
      * @param input      текст от пользователя
      * @param onComplete вызывается когда профиль собран
      */
+    // Consumer - это способ передачи метода в аргумент
     public String handle(String input, Consumer<UserProfile> onComplete) {
         if (state == State.WAITING_AGE) {
             pendingAge = input.trim();

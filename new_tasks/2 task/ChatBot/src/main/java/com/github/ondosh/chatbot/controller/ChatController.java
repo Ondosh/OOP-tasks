@@ -145,8 +145,9 @@ public class ChatController {
         bot.countUserMessage();
 
         // Если идёт опрос профиля — не отправляем боту сообщение
-        // В onSendMessage вместо if (profileState != ProfileState.NONE):
         if (profileWizard != null && profileWizard.isActive()) {
+            // Здесь вызываем лямбда функцию, просим её сохранить информацию
+            // про пользователя и сразу определяем профиль пользователя.
             String reply = profileWizard.handle(text, p -> {
                 ProfileManager.save(p);
                 bot.setUserProfile(p);
